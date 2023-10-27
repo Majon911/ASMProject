@@ -1,0 +1,27 @@
+---
+title: "ASMFinalProject"
+format: html
+editor: visual
+---
+
+## Group Members
+
+Jan Maciejowski, Hiba Laziri, Esther-Gail Fraser, Sindi Bejko, Ayah El Barq, Saif Abu Shaqra
+
+```{r}
+# Base -----------------------------
+library(igraph)
+library(tidyverse)
+
+# Viz ------------------------------
+library(ggraph)
+library(RColorBrewer)
+
+# Other ----------------------------
+library(knitr)
+library(DT)
+
+#Correspondence---------------------
+library(FactoMineR)  
+library(factoextra) 
+```
