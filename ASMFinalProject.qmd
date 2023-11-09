@@ -25,3 +25,526 @@ library(DT)
 library(FactoMineR)  
 library(factoextra) 
 ```
+
+Loading Data Sets
+
+```{r}
+advice <- read.graph('./advice.gml', format = 'gml')
+friend <- read.graph('./friend.gml', format = 'gml')
+work <- read.graph('./work.gml', format = 'gml')
+learn_advice <- read.graph('./learn_advice.gml', format = 'gml')
+```
+
+Loading the IEASM package
+
+```{r}
+# To be changed accordingly 
+source('C:\\Users\\majon\\OneDrive\\Pulpit\\IE docs\\SEMESTER 5\\Anal. Social Networks\\IEASM.R')
+```
+
+First Plot Of The Graphs
+
+```{r}
+plot.igraph(advice)
+plot.igraph(friend)
+plot.igraph(work)
+plot.igraph(learn_advice)
+```
+
+As we can see we are dealing with a directed network in all cases, but with the work network which is un-directed as proven later by the triad census.
+
+Also, as we can see in work and friends, we have some detached components
+
+# 1) Local Level of Analysis
+
+```{r}
+nets <- list(advice, friend, work, learn_advice)
+names(nets) <- c("advice", 'friend', 'work', 'learn_advice')
+```
+
+```{r}
+for (i in nets){
+  print(is_directed(i))
+}
+```
+
+## Network Metrics
+
+```{r}
+metrics <- c()
+
+for (i in 1:length(nets)){
+metrics[[i]] <- c(gorder(nets[[i]]),
+gsize(nets[[i]]),
+average.path.length(nets[[i]]),
+transitivity(nets[[i]], type = "average"),
+transitivity(nets[[i]], type = "global"),
+edge_density(nets[[i]]))
+}
+
+metrics <- as.data.frame(do.call(rbind, metrics))
+colnames(metrics) <- c("N", "L", "APL", "LCC", "GCC", "Density")
+rownames(metrics) <- c("Advice", 'Friend', 'Work', 'Learn_advice')
+
+metrics
+```
+
+## Centralities
+
+```{r}
+centralities <- function(graph, normalized = TRUE, directed = FALSE){
+cent <- data.frame(degree = degree(graph, normalized = TRUE),
+betweenness = betweenness(graph,
+directed = directed,
+normalized = TRUE),
+closeness = closeness(graph, normalized = TRUE),
+pagerank = page.rank(graph)$vector,
+egcent = eigen_centrality(graph)$vector)
+return(cent)
+}
+
+centrality1 <- centralities(advice, directed = TRUE)
+centrality2 <- centralities(friend, directed = TRUE)
+centrality3 <- centralities(work, directed = FALSE)
+centrality4 <- centralities(learn_advice, directed = TRUE)
+```
+
+```{r}
+cents <- list(centrality1, centrality2, centrality3, centrality4)
+n <- 1
+
+for (i in cents){
+print(head(arrange(i, desc(egcent)), 3))
+}
+```
+
+To be changed accordingly, now by 'egcent'!
+
+## Cut Points and Bridges
+
+```{r}
+for (i in nets){
+  print(articulation_points(i))
+  print(bridges(i))
+}
+```
+
+There is only one cut point and one bridge in graph friends. That is V15 and the bridge is from V15 to V37.
+
+## Degree Distribution
+
+```{r}
+par(mfrow=c(1, 4))
+hist(degree(advice), col="blue", main="Advice", xlab="Degree")
+hist(degree(friend), col="red", main="Friend", xlab="Degree")
+hist(degree(work), col="green", main="Work", xlab="Degree")
+hist(degree(learn_advice), col="yellow", main="Learn Advice", xlab="Degree")
+```
+
+# 2) Global Level of Analysis
+
+```{r}
+global_metrics <- c()
+
+for (i in 1:length(nets)){
+global_metrics[[i]] <- c(mean(degree(nets[[i]])),
+average.path.length(nets[[i]]),
+transitivity(nets[[i]], type = "average"),
+transitivity(nets[[i]], type = "global"),
+edge_density(nets[[i]]),
+reciprocity(nets[[i]]))
+}
+
+global_metrics <- as.data.frame(do.call(rbind, global_metrics))
+
+colnames(global_metrics) <- c("Average Degree", "APL", "LCC",
+"GCC", "Density", "Reciprocity")
+
+rownames(global_metrics) <- c("Advice", 'Friend', 'Work', 'Learn_advice')
+
+global_metrics
+```
+
+## Triad Census
+
+```{r}
+trd_census <- data.frame(row.names = c("003", "012", "102", "021D",
+"021U", "021C", "111D", "111U",
+"030T", "030C", "201", "120D",
+"120U", "120C", "210", "300"))
+
+for (i in 1:length(nets)){
+trd_census[names(nets)[i]] <- triad.census(nets[[i]])
+}
+
+trd_census
+```
+
+It seems like work is actually an un-directed network. Since it only has triads that do not have one sided connections. The rest of the graphs is surely directed.
+
+```{r}
+res.ca <- CA(trd_census, graph = FALSE)
+fviz_ca_biplot(res.ca, repel = TRUE)
+```
+
+## Centralizations
+
+```{r}
+centralization_func <- function(graph, directed = FALSE){
+centralizations <- data.frame(degree = centralization.degree(graph,
+mode = "all",
+loops = FALSE)$centralization,
+closeness = centralization.closeness(graph, mode = 'all')$centralization,
+betweenness = centralization.betweenness(graph,
+directed = directed)$centralization,
+evcent = centralization.evcent(graph)$centralization)
+return(centralizations)
+}
+
+centralization1 <- centralization_func(advice, directed = TRUE)
+centralization2 <- centralization_func(friend, directed = TRUE)
+centralization3 <- centralization_func(work, directed = FALSE)
+centralization4 <- centralization_func(learn_advice, directed = TRUE)
+```
+
+```{r}
+centralizations <- list(centralization1, centralization2, centralization3, centralization4)
+
+centralizations <- as.data.frame(do.call(rbind, centralizations))
+
+colnames(centralizations) <- c("Degree", "Closeness", "Betweenness", "Eigenvector")
+
+rownames(centralizations) <- c("Advice", 'Friend', 'Work', 'Learn_advice')
+
+centralizations
+```
+
+The NA-s introduced in closeness for friend and work are due to the disconnected components.
+
+That point is also to be made in the final paper!
+
+# 3) Groups and Subgroups
+
+## Largest Clique in each network
+
+```{r}
+largest.cliques(advice)
+clique.number(advice)
+```
+
+```{r}
+largest.cliques(friend)
+clique.number(friend)
+```
+
+```{r}
+largest.cliques(work)
+clique.number(work)
+```
+
+```{r}
+largest.cliques(learn_advice)
+clique.number(learn_advice)
+```
+
+## Coreness
+
+```{r}
+for (i in 1:length(nets)){
+kcores <- graph.coreness(nets[[i]])
+nets[[i]] <- set.vertex.attribute(nets[[i]],
+"coreness",
+value = kcores)
+colors <- colorRampPalette(c("blue", "green", "red"))(max(kcores))
+v_colors <- rep("gray", vcount(nets[[i]]))
+v_colors[kcores > 0] <- colors[kcores[kcores > 0]]
+nets[[i]] <- set.vertex.attribute(nets[[i]],
+"color",
+value = v_colors)
+name <- paste0("graph_", i)
+assign(name, nets[[i]])
+}
+```
+
+```{r}
+for (i in 1:length(nets)){
+name <- paste0("subgraph_maxcore_", i)
+assign(name,
+induced.subgraph(nets[[i]],
+vids = which(V(nets[[i]])$coreness > max(V(nets[[i]])$coreness)-1)))
+}
+```
+
+```{r}
+par(mfrow = c(2,2))
+
+plot(subgraph_maxcore_1,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_1)$color,
+vertex.size = degree(subgraph_maxcore_1)*0.6,
+main = paste0("Advice - Max coreness: ",
+max(V(subgraph_maxcore_1)$coreness), ", N: ",
+gorder(subgraph_maxcore_1)))
+
+plot(subgraph_maxcore_2,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_2)$color,
+vertex.size = degree(subgraph_maxcore_2)*0.6,
+main = paste0("Friend - Max coreness: ",
+max(V(subgraph_maxcore_2)$coreness), ", N: ",
+gorder(subgraph_maxcore_2)))
+
+plot(subgraph_maxcore_3,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_3)$color,
+vertex.size = degree(subgraph_maxcore_3)*0.6,
+main = paste0("Work - Max coreness: ",
+max(V(subgraph_maxcore_3)$coreness), ", N: ",
+gorder(subgraph_maxcore_3)))
+
+plot(subgraph_maxcore_4,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_3)$color,
+vertex.size = degree(subgraph_maxcore_3)*0.6,
+main = paste0("Learn Advice - Max coreness: ",
+max(V(subgraph_maxcore_3)$coreness), ", N: ",
+gorder(subgraph_maxcore_3)))
+```
+
+For a better visibility.
+
+```{r}
+plot(subgraph_maxcore_1,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_1)$color,
+vertex.size = degree(subgraph_maxcore_1)*0.6,
+main = paste0("Advice - Max coreness: ",
+max(V(subgraph_maxcore_1)$coreness), ", N: ",
+gorder(subgraph_maxcore_1)))
+```
+
+```{r}
+plot(subgraph_maxcore_2,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_2)$color,
+vertex.size = degree(subgraph_maxcore_2)*0.6,
+main = paste0("Friend - Max coreness: ",
+max(V(subgraph_maxcore_2)$coreness), ", N: ",
+gorder(subgraph_maxcore_2)))
+```
+
+```{r}
+plot(subgraph_maxcore_3,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_3)$color,
+vertex.size = degree(subgraph_maxcore_3)*0.6,
+main = paste0("Work - Max coreness: ",
+max(V(subgraph_maxcore_3)$coreness), ", N: ",
+gorder(subgraph_maxcore_3)))
+```
+
+```{r}
+plot(subgraph_maxcore_4,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_3)$color,
+vertex.size = degree(subgraph_maxcore_3)*0.6,
+main = paste0("Learn Advice - Max coreness: ",
+max(V(subgraph_maxcore_3)$coreness), ", N: ",
+gorder(subgraph_maxcore_3)))
+```
+
+# 4) Dyadic Level of Analysis
+
+## Similarities
+
+```{r}
+sapply(nets, function(x) max_alpha(x))
+```
+
+```{r}
+for(i in 1:length(nets)){
+cat(paste("Network: ", names(nets)[i], "\n"))
+kable(similarities(nets[[i]], "jaccard"), align = "cc")
+kable(similarities(nets[[i]], "katz", 0.05), align = "cc")
+}
+```
+
+```{r}
+# As an example
+V(advice)[55];V(advice)[52]
+```
+
+## Modularity
+
+```{r}
+Q.degree <- function(graph){
+L <- gsize(graph)
+deg <- degree(graph, mode="all")
+delta <- diag(nrow = gorder(graph))
+a <- delta * deg # Be careful with this multiplication
+kk <- deg %*% t(deg)
+adj_mat <- as.matrix(as_adjacency_matrix(graph))
+return(mtrace((adj_mat - kk/(2*L)) %*% kk)/mtrace((a-kk/(2*L)) %*% kk))
+}
+```
+
+```{r}
+modularity_degree <- c()
+for (i in 1:length(nets)){
+modularity_degree[[i]] <- c(Q.degree(nets[[i]]),
+assortativity.degree(nets[[i]]))
+}
+modularity_degree <- as.data.frame(do.call(rbind, modularity_degree))
+colnames(modularity_degree) <- c("Modularity by Degree", "Assortativity Degree")
+rownames(modularity_degree) <- c("Advice", 'Friend', 'Work', 'Learn_advice')
+
+modularity_degree
+```
+
+Since the function Q.degree is made for directed graphs it is less credible then the assortativity degree metric.
+
+## Assortativity
+
+```{r}
+deg_correl <- setNames(as.data.frame(matrix(ncol = 3, nrow = 0)),
+c("degree", "correlation", "network"))
+
+n <- 1
+
+for (i in 1:length(nets)){
+deg_correl_func <- knn(nets[[i]])
+tmp <- data.frame(degree = 1:length(deg_correl_func$knnk),
+correlation = deg_correl_func$knnk,
+network = rep(paste0("graph", n),
+length(deg_correl_func$knnk))) %>%
+dplyr::filter(!is.na(correlation))
+deg_correl <- rbind(deg_correl, tmp)
+n <- n+1
+}
+```
+
+```{r}
+plot_deg_correl <- function(data, title){
+data %>%
+ggplot(aes(x = degree, y = correlation)) +
+geom_point()+
+scale_x_log10() +
+scale_y_log10() +
+geom_smooth(method = "lm", formula = "y~x") +
+labs(title = title,
+y = expression("k"["nn"]("k")),
+x = expression("k")) +
+geom_hline(aes(yintercept = mean(degree**2)/mean(degree)), color = "red") +
+theme_bw() +
+theme(plot.title = element_text(hjust = 0.5, size = 20),
+axis.title = element_text(size = 15))
+}
+```
+
+```{r}
+advice_dcf <- plot_deg_correl(deg_correl[deg_correl$network == "graph1", ],
+paste("Advice"))
+
+friend_dcf <- plot_deg_correl(deg_correl[deg_correl$network == "graph2", ],
+paste("Friend"))
+
+work_dcf <- plot_deg_correl(deg_correl[deg_correl$network == "graph3", ],
+paste("Work"))
+
+learn_advice_dcf <- plot_deg_correl(deg_correl[deg_correl$network == "graph4", ],
+paste("Learn Advice"))
+
+cowplot::plot_grid(advice_dcf,
+friend_dcf,
+work_dcf,
+learn_advice_dcf,
+nrow = 1, ncol = 4)
+```
+
+## Degree Correlation Function
+
+```{r}
+model1 <- lm(log(correlation) ~ log(degree),
+data = deg_correl[deg_correl$network == "graph1", ])
+
+model2 <- lm(log(correlation) ~ log(degree),
+data = deg_correl[deg_correl$network == "graph2", ])
+
+model3 <- lm(log(correlation) ~ log(degree),
+data = deg_correl[deg_correl$network == "graph3", ])
+
+model4 <- lm(log(correlation) ~ log(degree),
+data = deg_correl[deg_correl$network == "graph4", ])
+
+models <- list(model1, model2, model3, model4)
+estimates <- data.frame(row.names = c("Low", "High"))
+
+i <- 1
+
+for (i in 1:length(models)){
+clname <- c("Advice", 'Friend', 'Work', 'Learn_advice')
+cint <- confint(models[[i]], 'log(degree)', level=0.99)
+estimates[clname] <- c(cint[1], cint[2])
+i <- i + 1
+}
+
+estimates
+```
+
+## Assortativity Forces
+
+Well since the attributes are exactly the same for each graph and we illustrate different graphs regarding the same organization at the same way point, there is no sense in testing for both homophiliy and influence as we would have to compare the graphs at a different time, to see those effects.
+
+# 5) Further EDA
+
+Those are the attributes!
+
+1.  status (1=partner; 2=associate)
+
+2.  gender (1=man; 2=woman)
+
+3.  office (1=Boston; 2=Hartford; 3=Providence)
+
+4.  years with the firm
+
+5.  age
+
+6.  practice (1=litigation; 2=corporate)
+
+7.  law school (1: harvard, yale; 2: ucon; 3: other)
+
+```{r}
+#V(advice)$id
+#V(advice)$name
+
+print("Status:")
+table(V(advice)$status)
+print('Sex:')
+table(V(advice)$sex)
+print("Office:")
+table(V(advice)$office)
+print('Tenure:')
+V(advice)$tenure
+print('Age:')
+V(advice)$age
+print("Practice:")
+table(V(advice)$practice)
+print('School:')
+table(V(advice)$school)
+```
