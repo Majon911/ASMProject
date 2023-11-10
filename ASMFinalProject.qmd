@@ -92,8 +92,9 @@ metrics
 ## Centralities
 
 ```{r}
+# Parameters to be changed as needed
 centralities <- function(graph, normalized = TRUE, directed = FALSE){
-cent <- data.frame(degree = degree(graph, normalized = TRUE),
+cent <- data.frame(degree = degree(graph, normalized = TRUE, mode = 'all'),
 betweenness = betweenness(graph,
 directed = directed,
 normalized = TRUE),
@@ -114,11 +115,46 @@ cents <- list(centrality1, centrality2, centrality3, centrality4)
 n <- 1
 
 for (i in cents){
-print(head(arrange(i, desc(egcent)), 3))
+print(head(arrange(i, desc(degree)), 3))
 }
 ```
 
 To be changed accordingly, now by 'egcent'!
+
+```{r}
+#v26
+V(advice)[26]$status # Partner
+V(advice)[26]$sex #Male
+V(advice)[26]$office # Boston
+V(advice)[26]$tenure # 15
+V(advice)[26]$age # 41
+V(advice)[26]$practice #Litigation
+V(advice)[26]$school # Other
+degree(advice, 26, mode = 'in', normalized = TRUE) #More
+degree(advice, 26, mode = 'out', normalized = TRUE) #Less
+
+#V13
+V(advice)[13]$status # Partner
+V(advice)[13]$sex # Male
+V(advice)[13]$office # Boston
+V(advice)[13]$tenure # 22
+V(advice)[13]$age # 57
+V(advice)[13]$practice # Litigation
+V(advice)[13]$school # Yale
+degree(advice, 13, mode = 'in', normalized = TRUE) #More
+degree(advice, 13, mode = 'out', normalized = TRUE) #Less
+
+#V28
+V(advice)[28]$status # Partner
+V(advice)[28]$sex # Male
+V(advice)[28]$office # Hartford
+V(advice)[28]$tenure # 11
+V(advice)[28]$age # 38
+V(advice)[28]$practice # Corporate
+V(advice)[28]$school # Yale
+degree(advice, 28, mode = 'in', normalized = TRUE) #More
+degree(advice, 28, mode = 'out', normalized = TRUE) #Less
+```
 
 ## Cut Points and Bridges
 
@@ -539,12 +575,14 @@ print('Sex:')
 table(V(advice)$sex)
 print("Office:")
 table(V(advice)$office)
-print('Tenure:')
-V(advice)$tenure
-print('Age:')
-V(advice)$age
+
+hist(V(advice)$tenure)
+
+hist(V(advice)$age)
 print("Practice:")
 table(V(advice)$practice)
 print('School:')
 table(V(advice)$school)
 ```
+
+Tenure is mostly very young, up to 10 years. Age is mostly in early 30s. There is not a lot of under 30s. Gender mostly men, 36 partners and 35 associates. Mostly Boston based, working litigation, but corp is strong as well. 15 out of Harvard, 28 Yale, 28 others.
