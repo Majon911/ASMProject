@@ -115,13 +115,14 @@ cents <- list(centrality1, centrality2, centrality3, centrality4)
 n <- 1
 
 for (i in cents){
-print(head(arrange(i, desc(degree)), 3))
+print(head(arrange(i, desc(closeness)), 3))
 }
 ```
 
 To be changed accordingly, now by 'egcent'!
 
 ```{r}
+#ADVICE
 #v26
 V(advice)[26]$status # Partner
 V(advice)[26]$sex #Male
@@ -154,6 +155,63 @@ V(advice)[28]$practice # Corporate
 V(advice)[28]$school # Yale
 degree(advice, 28, mode = 'in', normalized = TRUE) #More
 degree(advice, 28, mode = 'out', normalized = TRUE) #Less
+```
+
+```{r}
+#FRIEND
+#v17
+V(advice)[17]$status # Partner
+V(advice)[17]$sex #Male
+V(advice)[17]$office # Boston
+V(advice)[17]$tenure # 23
+V(advice)[17]$age # 50
+V(advice)[17]$practice # Corporate
+V(advice)[17]$school # Harvard
+degree(friend, 17, mode = 'in', normalized = TRUE) #Less
+degree(friend, 17, mode = 'out', normalized = TRUE) #More
+
+#V24
+V(advice)[24]$status # Partner
+V(advice)[24]$sex # Male
+V(advice)[24]$office # Boston
+V(advice)[24]$tenure # 15
+V(advice)[24]$age # 44
+V(advice)[24]$practice # Litigation
+V(advice)[24]$school # Yale
+degree(friend, 24, mode = 'in', normalized = TRUE) #Less
+degree(friend, 24, mode = 'out', normalized = TRUE) #More
+
+#V31
+V(advice)[31]$status # Partner
+V(advice)[31]$sex # Male
+V(advice)[31]$office # Hartford
+V(advice)[31]$tenure # 8
+V(advice)[31]$age # 34
+V(advice)[31]$practice # Litigation
+V(advice)[31]$school # Yale
+degree(friend, 31, mode = 'in', normalized = TRUE) #Less
+degree(friend, 31, mode = 'out', normalized = TRUE) #More
+```
+
+```{r}
+#WORK
+#v16
+V(advice)[16]$status # Partner
+V(advice)[16]$sex #Male
+V(advice)[16]$office # Boston
+V(advice)[16]$tenure # 20
+V(advice)[16]$age # 46
+V(advice)[16]$practice # Corporate
+V(advice)[16]$school # Harvard
+
+#V22
+V(advice)[22]$status # Partner
+V(advice)[22]$sex # Male
+V(advice)[22]$office # Boston
+V(advice)[22]$tenure # 9
+V(advice)[22]$age # 49
+V(advice)[22]$practice # Litigation
+V(advice)[22]$school # Other
 ```
 
 ## Cut Points and Bridges
@@ -586,3 +644,70 @@ table(V(advice)$school)
 ```
 
 Tenure is mostly very young, up to 10 years. Age is mostly in early 30s. There is not a lot of under 30s. Gender mostly men, 36 partners and 35 associates. Mostly Boston based, working litigation, but corp is strong as well. 15 out of Harvard, 28 Yale, 28 others.
+
+# 6) Randomness and Graph Type
+
+```{r}
+for (i in 1:length(nets)){
+  name1 <- names(nets[i])
+  acc <- (gsize(nets[[i]])/gorder(nets[[i]]))/(gorder(nets[[i]])-1)
+  prob1 <- 1/(gorder(nets[[i]])-1)
+  if (acc < prob1){
+    cat('The Average Clustering Coef. is:', acc, 'and the graph', name1,'is SUBCRITICAL \n')
+  } else if (acc == prob1) {
+    cat('The Average Clustering Coef. is:', acc, 'and the graph', name1,'is CRITICAL \n')
+  } else if (acc > prob1) {
+    cat('The Average Clustering Coef. is:', acc, 'and the graph', name1,'is SUPERCRITICAL \n')
+  } 
+  if (is.connected(nets[[i]])) {
+    cat('The Average Clustering Coef. is:', acc, 'and the graph', name1,'is CONNECTED \n')
+  }
+}
+
+
+```
+
+```{r}
+set.seed(101)
+
+random_advice <- erdos.renyi.game(71, 0.1794769, directed = TRUE)
+random_friend <- erdos.renyi.game(71, 0.1156942, directed = TRUE)
+random_work <- erdos.renyi.game(71, 0.1521127, directed = FALSE)
+random_learn_advice <- erdos.renyi.game(71, 0.1794769, directed = TRUE)
+```
+
+```{r}
+nets_random <- list(random_advice, random_friend, random_work, random_learn_advice)
+
+metrics_random <- c()
+
+for (i in 1:length(nets_random)){
+metrics_random[[i]] <- c(gorder(nets_random[[i]]),
+gsize(nets_random[[i]]),
+average.path.length(nets_random[[i]]),
+transitivity(nets_random[[i]], type = "average"),
+transitivity(nets_random[[i]], type = "global"),
+edge_density(nets_random[[i]]))
+}
+
+metrics_random <- as.data.frame(do.call(rbind, metrics_random))
+colnames(metrics_random) <- c("N", "L", "APL", "LCC", "GCC", "Density")
+rownames(metrics_random) <- c("Advice Random", 'Friend Random', 'Work Random', 'Learn Advice Random')
+
+metrics_random
+```
+
+```{r}
+ks_test_randomness <- ks.test(degree.distribution(advice), degree.distribution(random_advice))
+print(ks_test_randomness)
+```
+
+Small World Avg. Path Length
+
+```{r}
+for (i in 1:length(nets)){
+  name1 <- names(nets[i])
+  avg_pl <- log(gorder(nets[[i]]))/log((gsize(nets[[i]])/gorder(nets[[i]])))
+  cat('The Small World APL is:', avg_pl, 'and the graph', name1,'is CONNECTED \n')
+}
+```
