@@ -711,3 +711,32 @@ for (i in 1:length(nets)){
   cat('The Small World APL is:', avg_pl, 'and the graph', name1,'is CONNECTED \n')
 }
 ```
+
+# 7) ERGM Models
+
+```{r}
+library(ergm)
+```
+
+```{r}
+advice_edges <- as_edgelist(advice)
+advice_net <- network(advice_edges)
+
+advice_net %v% 'sex' <- V(advice)$id
+```
+
+```{r}
+# DO NOT RUN
+advice_net <- advice
+for (i in 1:71){
+  V(advice_net)[i]$id <- i
+}
+```
+
+Node Level Effects
+
+```{r}
+#Node level effects
+model1 <- ergm(advice_net ~ edges + nodefactor('sex'))
+summary(model1)
+```
