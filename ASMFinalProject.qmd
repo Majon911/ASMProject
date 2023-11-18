@@ -719,10 +719,34 @@ library(ergm)
 ```
 
 ```{r}
+attributes_df <- data.frame(id = V(advice)$id, name = V(advice)$name, status = V(advice)$status, sex = V(advice)$sex, office = V(advice)$office, tenure = V(advice)$tenure, age = V(advice)$age, practice = V(advice)$practice, school = V(advice)$school, degree_cent = centrality1$degree, betweenness_cent = centrality1$betweenness, closeness_cent = centrality1$closeness, egcent_cent = centrality1$egcent)
+attributes_df
+```
+
+```{r}
+row.names(attributes_df) <- attributes_df$name
+attributes_df <- attributes_df[match(network.vertex.names(advice_net), row.names(attributes_df)), ]
+attributes_df
+```
+
+```{r}
 advice_edges <- as_edgelist(advice)
 advice_net <- network(advice_edges)
 
-advice_net %v% 'sex' <- V(advice)$id
+advice_net %v% 'id' <- attributes_df$id
+advice_net %v% 'name' <- attributes_df$name
+advice_net %v% 'status' <- attributes_df$status
+advice_net %v% 'sex' <- attributes_df$sex
+advice_net %v% 'office' <- attributes_df$office
+advice_net %v% 'tenure' <- attributes_df$tenure
+advice_net %v% 'age' <- attributes_df$age
+advice_net %v% 'practice' <- attributes_df$practice
+advice_net %v% 'school' <- attributes_df$school
+
+advice_net %v% 'degree_cent' <- attributes_df$degree_cent
+advice_net %v% 'betweenness_cent' <- attributes_df$betweenness_cent
+advice_net %v% 'closeness_cent' <- attributes_df$closeness_cent
+advice_net %v% 'egcent_cent' <- attributes_df$egcent_cent
 ```
 
 ```{r}
@@ -733,10 +757,64 @@ for (i in 1:71){
 }
 ```
 
+```{r}
+plot(advice_net)
+```
+
 Node Level Effects
+
+Increase or decrease in the odds that a tie is present in the network for every tie, being both coefficients statistically relevant
 
 ```{r}
 #Node level effects
-model1 <- ergm(advice_net ~ edges + nodefactor('sex'))
+model1 <- ergm(advice_net ~ edges + nodecov('tenure') + nodecov('age') + nodematch('status') + nodematch('sex') + nodematch('office') + + nodematch('practice') + nodematch('school') + nodematch('degree_cent'))
 summary(model1)
+
+# nodematch('betweenness_cent') + nodematch('egcent_cent')
+```
+
+The log-odds of a within-group tie are nx greater than an across-group tie. - Nodematch
+
+```{r}
+model2 <- ergm(advice_net ~ edges + nodecov('tenure') + nodecov('age') + nodemix('status') + nodemix('sex') + nodemix('office') + nodemix('practice') + nodemix('school'))
+summary(model2)
+```
+
+```{r}
+model3 <- ergm(advice_net ~ edges + nodecov('tenure') + nodematch('status') + nodemix('practice') + nodematch('sex') + nodematch('office') + absdiff('degree_cent') + absdiff('betweenness_cent') + absdiff('egcent_cent'))
+summary(model3)
+```
+
+```{r}
+#+ edgecov(advice_net)
+
+model4 <- ergm(advice_net ~ edges + nodecov('tenure') + nodecov('age') + absdiff('status') + absdiff('sex') + absdiff('office') + absdiff('practice') + absdiff('school') + absdiff('degree_cent') + absdiff('betweenness_cent') + absdiff('egcent_cent'))
+summary(model4)
+```
+
+```{r}
+new_attr_df <- attributes_df %>% select(status, sex, office, tenure, age, practice, school, degree_cent, betweenness_cent, egcent_cent)
+```
+
+```{r}
+friend_edges <- as_edgelist(friend)
+friend_net <- network(friend_edges)
+
+work_edges <- as_edgelist(work)
+work_net <- network(work_edges)
+```
+
+```{r}
+model5 <- ergm(advice_net ~ edges + edgecov(work_net) + dyadcov(friend_net))
+summary(model5)
+```
+
+```{r}
+model6 <- ergm(advice_net ~ edges + gwesp(2, fixed = TRUE, cutoff = 50))
+summary(model6)
+```
+
+```{r}
+model_final <- ergm(advice_net ~ edges + nodecov('tenure') + nodematch('status') + nodemix('practice') + nodematch('sex') + nodematch('office') + absdiff('degree_cent') + absdiff('betweenness_cent') + absdiff('egcent_cent') + edgecov(work_net) + dyadcov(friend_net))
+summary(model_final)
 ```
