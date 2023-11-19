@@ -1,0 +1,431 @@
+---
+title: "Networks Project"
+format: html
+editor: visual
+---
+
+Loading the libraries and stuffs.
+
+When you click the Render button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+{r}
+# Base ----------------------------- 
+library(igraph) 
+library(tidyverse) 
+library(factoextra)
+#library(FactoMineR)
+
+# Viz ------------------------------ 
+library(ggraph) 
+library(RColorBrewer)  
+
+# Other ---------------------------- 
+library(knitr) 
+library(DT)
+
+library(dplyr)
+
+{r}
+source("IEASM.R")
+
+{r}
+work <- read.graph("./work.gml", format = "gml") 
+learn_advice <- read.graph("./learn_advice.gml", format = "gml") 
+friend <- read.graph("./friend.gml", format = "gml")
+advice <- read.graph("./advice.gml", format = "gml")
+
+🔑 Key to remember that :
+
+all the networks are directed
+
+all networks have high clustering coefficients
+
+all networks exhibit small world qualities.
+
+Running the different community algorithms
+
+🤔 For small-world networks with high clustering coefficients, algorithms that consider local information and exploit the network's clustering tendency can be effective in detecting communities. So gonna go for :
+
+Louvain Algorithm
+
+Edge Betweenness Community Detection
+
+Girvan-Newman algorithm in which modularity is locally optimized
+
+Label Propagation Algorithm (LPA) (recommended after online research
+
+{r}
+# Visualising the graphs first 
+plot(work, layout = layout_with_fr)
+
+#layout = layout_with_fr 
+#The Fruchterman-Reingold algorithm is a force-directed layout algorithm used for graph drawing. It simulates a physical system where nodes (representing vertices in the graph) are initially placed randomly and then iteratively move based on attractive forces between connected nodes and repulsive forces between all nodes. This iterative process aims to find an equilibrium where nodes are evenly distributed and well-separated, creating a visually pleasing representation of the graph.
+
+Edge Betweeness Community Detection
+
+{r}
+# WORK 
+ebc_work <- edge.betweenness.community(work)
+print(ebc_work)
+
+{r}
+plot(ebc_work, work, vertex.color = membership(ebc_work), vertex.label = NA)
+# Get unique community memberships
+unique_communities <- unique(membership(ebc_work))
+
+# Create a legend for the communities
+legend_text <- sapply(unique_communities, function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+legend("topright", legend = legend_text, fill = palette()[unique_communities])
+
+#interpretation
+
+{r}
+# LEARN_ADVICE
+ebc_learnadvice <- edge.betweenness.community(learn_advice)
+print(learn_advice)
+
+
+{r}
+# visualising the learn_advice
+plot(ebc_learnadvice, learn_advice, vertex.color = membership(ebc_learnadvice), vertex.label = NA)
+
+# Get unique community memberships
+unique_communities_la <- unique(membership(ebc_learnadvice))
+
+# Create a legend for the communities
+legend_text <- sapply(unique_communities_la, function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+legend("topright", legend = legend_text, fill = palette()[unique_communities_la])
+
+{r}
+#ADVICE 
+ebc_advice <- edge.betweenness.community(advice)
+print(advice)
+
+{r}
+# visualising membership advice
+plot(ebc_advice, advice, vertex.color = membership(ebc_advice), vertex.label = NA)
+# Get unique community memberships
+unique_communities_advice <- unique(membership(ebc_advice))
+
+# Create a legend for the communities
+legend_text <- sapply(unique_communities_advice, function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+legend("topright", legend = legend_text, fill = palette()[unique_communities_advice])
+
+{r}
+#FRIEND
+ebc_friend <- edge.betweenness.community(friend)
+print(friend)
+
+{r}
+# visualising membership friend communities 
+plot(ebc_friend, friend, vertex.color = membership(ebc_friend), vertex.label = NA)
+# Get unique community memberships
+unique_communities_friend <- unique(membership(ebc_friend))
+
+# Create a legend for the communities
+legend_text <- sapply(unique_communities_friend, function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+legend("topright", legend = legend_text, fill = palette()[unique_communities_friend])
+
+Louvain Method
+
+❗Note that Louvain method only works with undirected graphs, so i'm going to convert each network to undirected ones, and run the community detection algorithm
+
+{r}
+# WORK 
+# Convert directed graph to undirected
+undirected_work <- as.undirected(work, mode = "collapse")
+
+# Perform Louvain community detection on the undirected graph
+louvain_communities_w <- cluster_louvain(undirected_work)
+print(louvain_communities_w)
+
+
+{r}
+
+# Plot the graph and color nodes based on Louvain community membership
+plot(louvain_communities_w, work, vertex.color = membership(louvain_communities_w), 
+     vertex.label = NA, main = "Community Detection on WORK networkusing Louvain Method")
+
+# Create a legend for the communities
+legend_text_w <- sapply(unique(membership(louvain_communities_w)), function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+legend("topright", legend = legend_text_w, fill = palette()[unique(membership(louvain_communities_w))])
+
+
+{r}
+# LEARN & ADVICE
+# Convert directed graph to undirected
+undirected_la <- as.undirected(learn_advice, mode = "collapse")
+
+# Perform Louvain community detection on the undirected graph
+louvain_communities_la <- cluster_louvain(undirected_la)
+print(louvain_communities_la)
+
+{r}
+# Plot the graph and color nodes based on Louvain community membership
+plot(louvain_communities_la, learn_advice, vertex.color = membership(louvain_communities_la), 
+     vertex.label = NA, main = "Community Detection on LEARN & ADVICE networks using Louvain Method")
+
+# Create a legend for the communities
+legend_text_la <- sapply(unique(membership(louvain_communities_la)), function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+legend("topright", legend = legend_text_la, fill = palette()[unique(membership(louvain_communities_la))])
+
+{r}
+# ADVICE 
+# Convert directed graph to undirected
+undirected_a <- as.undirected(advice, mode = "collapse")
+
+# Perform Louvain community detection on the undirected graph
+louvain_communities_a <- cluster_louvain(undirected_a)
+print(louvain_communities_a)
+
+{r}
+# Plot the graph and color nodes based on Louvain community membership
+plot(louvain_communities_a,advice, vertex.color = membership(louvain_communities_a), 
+     vertex.label = NA, main = "Community Detection on ADVICE networks using Louvain Method")
+
+# Create a legend for the communities
+legend_text_a <- sapply(unique(membership(louvain_communities_a)), function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+legend("topright", legend = legend_text_a, fill = palette()[unique(membership(louvain_communities_a))])
+
+{r}
+# FRIEND NETWORK
+# Convert directed graph to undirected
+undirected_f <- as.undirected(friend, mode = "collapse")
+
+# Perform Louvain community detection on the undirected graph
+louvain_communities_f <- cluster_louvain(undirected_f)
+print(louvain_communities_f)
+
+{r}
+# Plot the graph and color nodes based on Louvain community membership
+plot(louvain_communities_f, friend, vertex.color = membership(louvain_communities_f), 
+     vertex.label = NA, main = "Community Detection on FRIEND networks using Louvain Method")
+
+# Create a legend for the communities
+legend_text_f <- sapply(unique(membership(louvain_communities_f)), function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+legend("topright", legend = legend_text_f, fill = palette()[unique(membership(louvain_communities_f))])
+
+Greedy Modularity Algorithm
+
+❗this algorithm also only works on undirected graphs as well, so gonna call the variables from earlier that made each network undirected
+
+Undirected versions of each network:
+
+work = undirected_work
+
+learn&advice = undirected_la
+
+advice = undirected_a
+
+friend = undirected_f
+
+{r}
+
+# Perform Greedy Modularity community detection
+greedy_modularity_communities_w <- cluster_fast_greedy(undirected_work)
+print(greedy_modularity_communities_w)
+
+# Visualize the communities
+plot(greedy_modularity_communities_w, undirected_work, vertex.color = membership(greedy_modularity_communities_w), 
+     vertex.label = NA, main = "Community Detection WORK network using Greedy Modularity Algorithm")
+
+
+{r}
+#Learn & advice 
+# Perform Greedy Modularity community detection
+greedy_modularity_communities_la <- cluster_fast_greedy(undirected_la)
+print(greedy_modularity_communities_la)
+
+# Visualize the communities
+plot(greedy_modularity_communities_la, undirected_la, vertex.color = membership(greedy_modularity_communities_la), 
+     vertex.label = NA, main = "Community Detection LEARN & ADVICE  network using Greedy Modularity Algorithm")
+
+{r}
+#Advice 
+# Perform Greedy Modularity community detection
+greedy_modularity_communities_a <- cluster_fast_greedy(undirected_a)
+print(greedy_modularity_communities_a)
+
+# Visualize the communities
+plot(greedy_modularity_communities_a, undirected_a, vertex.color = membership(greedy_modularity_communities_a), 
+     vertex.label = NA, main = "Community Detection ADVICE  network using Greedy Modularity Algorithm")
+
+{r}
+#Friend
+# Perform Greedy Modularity community detection
+greedy_modularity_communities_f <- cluster_fast_greedy(undirected_f)
+print(greedy_modularity_communities_f)
+
+# Visualize the communities
+plot(greedy_modularity_communities_f, undirected_f, vertex.color = membership(greedy_modularity_communities_f), 
+     vertex.label = NA, main = "Community Detection FRIEND  network using Greedy Modularity Algorithm")
+
+Calculating all the scores so we can compare each community detection algorithm
+
+{r}
+# Assuming you have lists of detected communities for each algorithm
+louvain_communities_list <- list(louvain_communities_w,louvain_communities_la, louvain_communities_a, louvain_communities_f )  # Louvain communities for each network
+
+greedy_modularity_communities_list <- list(greedy_modularity_communities_w,greedy_modularity_communities_la, greedy_modularity_communities_a, greedy_modularity_communities_f )  # Greedy Modularity communities for each network
+
+edge_betweenness_communities_list <- list(ebc_work,ebc_learnadvice,ebc_advice,ebc_friend   )  # Edge Betweenness communities for each network
+
+# Assuming you have a list of networks named 'networks_list'
+
+# List to store modularity scores for each community detection algorithm
+modularity_scores <- list(Louvain = numeric(length(louvain_communities_list)),
+                          Greedy_Modularity = numeric(length(greedy_modularity_communities_list)),
+                          Edge_Betweenness = numeric(length(edge_betweenness_communities_list)))
+
+# Calculate modularity scores for Louvain communities
+for (i in 1:length(louvain_communities_list)) {
+  modularity_scores$Louvain[i] <- modularity(louvain_communities_list[[i]], networks_list[[i]])
+}
+
+# Calculate modularity scores for Greedy Modularity communities
+for (i in 1:length(greedy_modularity_communities_list)) {
+  modularity_scores$Greedy_Modularity[i] <- modularity(greedy_modularity_communities_list[[i]], networks_list[[i]])
+}
+
+# Calculate modularity scores for Edge Betweenness communities
+for (i in 1:length(edge_betweenness_communities_list)) {
+  modularity_scores$Edge_Betweenness[i] <- modularity(edge_betweenness_communities_list[[i]], networks_list[[i]])
+}
+
+# Output the modularity scores for each algorithm and network
+for (algo in names(modularity_scores)) {
+  cat("Algorithm:", algo, "\n")
+  for (i in 1:length(modularity_scores[[algo]])) {
+    cat("Network", i, "Modularity Score:", modularity_scores[[algo]][i], "\n")
+  }
+  cat("\n")
+}
+
+
+So in summary,
+
+It seems like the Louvain Algorithm is the best to split the networks into their different communities because it has produced the highest modularity scores. It is worth noting however that the Louvain algorithm requires that the networks be undirected, so I had to change them to be undirected for me to run the code
+
+Analsying
+
+Calculating the basic metrics of each community in each network
+
+{r}
+# Assuming 'networks_list' is your list of networks
+# Assuming 'louvain_communities_w', 'louvain_communities_la', 'louvain_communities_a', 'louvain_communities_f'
+# contain Louvain-detected communities for each network
+
+louvain_communities_list <- list(louvain_communities_w, louvain_communities_la, louvain_communities_a, louvain_communities_f)
+
+for (i in 1:length(networks_list)) {
+  cat("Network", i, ":\n")
+  
+  # Extract Louvain communities for the current network
+  louvain_communities <- unlist(louvain_communities_list[[i]])
+  
+  # Remove NA values from louvain_communities
+  louvain_communities <- louvain_communities[!is.na(louvain_communities)]
+  
+  # Calculate and print various metrics for each community
+  for (j in unique(louvain_communities)) {
+    if (is.na(j)) next  # Skip NA values
+    
+    community_nodes <- which(louvain_communities == j)
+    
+    if (length(community_nodes) > 0) {
+      # Check if community_nodes contain valid vertex IDs
+      valid_nodes <- community_nodes[community_nodes <= vcount(networks_list[[i]])]
+      
+      if (length(valid_nodes) > 0) {
+        # Metrics within each community
+        subgraph <- induced_subgraph(networks_list[[i]], valid_nodes)
+        avg_degree <- mean(degree(subgraph))
+        density <- graph.density(subgraph)  # Corrected function
+        clustering_coef <- mean(transitivity(subgraph))
+        avg_path_length <- mean(average.path.length(subgraph))
+        
+        cat("Community", j, "Metrics:\n")
+        cat("Average Degree:", avg_degree, "\n")
+        cat("Density:", density, "\n")
+        cat("Clustering Coefficient:", clustering_coef, "\n")
+        cat("Average Path Length:", avg_path_length, "\n")
+        cat("\n")
+      } else {
+        cat("Invalid vertex IDs in community", j, "\n")
+      }
+    }
+  }
+}
+
+
+Checking to see if there are any hubs or bridges in each network
+
+{r}
+# Assuming 'networks_list' is your list of networks
+# Assuming 'louvain_communities_list' contains Louvain-detected communities for each network
+
+for (i in 1:length(networks_list)) {
+  cat("Network", i, ":\n")
+  
+  louvain_communities <- louvain_communities_list[[i]]
+  
+  for (j in unique(unlist(louvain_communities))) {
+    if (is.na(j)) next  # Skip NA values
+    
+    community_nodes <- which(unlist(louvain_communities) == j)
+    
+    if (length(community_nodes) > 0) {
+      valid_nodes <- community_nodes[community_nodes <= vcount(networks_list[[i]])]
+      
+      if (length(valid_nodes) > 0) {
+        subgraph <- induced_subgraph(networks_list[[i]], valid_nodes)
+        
+        # Calculate betweenness centrality for nodes in the subgraph
+        node_betweenness <- betweenness(subgraph)
+        
+        # Find hub nodes (nodes with high betweenness centrality)
+        hub_nodes <- which(node_betweenness == max(node_betweenness))
+        
+        # Find bridge nodes (if any)
+        edge_betweenness <- edge.betweenness(subgraph)
+        bridge_edges <- which(edge_betweenness == max(edge_betweenness))
+        bridge_nodes <- as.numeric(unique(as.vector(ends(subgraph, E(subgraph)[bridge_edges]))))
+        
+        # Print hub nodes
+        cat("Community", j, "Hub Nodes:", ifelse(length(hub_nodes) > 0, hub_nodes, "None"), "\n")
+        
+        # Print bridge nodes
+        cat("Community", j, "Bridge Nodes:", ifelse(length(bridge_nodes) > 0, bridge_nodes, "None"), "\n")
+      } else {
+        cat("Invalid vertex IDs in community", j, "\n")
+      }
+    }
+  }
+}
+
+
+
