@@ -39,7 +39,7 @@ Loading the IEASM package
 
 ```{r}
 # To be changed accordingly 
-source('C:\\Users\\majon\\OneDrive\\Pulpit\\IE docs\\SEMESTER 5\\Anal. Social Networks\\IEASM.R')
+source("C:\\Users\\majon\\OneDrive\\Pulpit\\IE docs\\SEMESTER 5\\Anal. Social Networks\\Final Project\\IEASM.R")
 ```
 
 First Plot Of The Graphs
@@ -1098,4 +1098,62 @@ calculate_assortativity <- function(graph, attribute) {
 # Example usage for the 'advice' network and 'status' attribute
 advice_status_assortativity <- calculate_assortativity(advice, "status")
 print(advice_status_assortativity)
+```
+
+# 10) Community Detection
+
+# 11) ICM
+
+Select a random node in the network.
+
+```{r}
+ran_actor_advice <- sample(1:71, 1)
+V(advice)[ran_actor]
+ran_actor_friend <- sample(1:71, 1)
+V(friend)[ran_actor]
+ran_actor_work <- sample(1:71, 1)
+V(work)[ran_actor]
+```
+
+```{r}
+# Minus 1, because the actor himself is not his neighbour.
+n_of_neighbours_advice <- length(neighborhood(advice, order = 1, ran_actor_advice, 'out')[[1]])-1
+n_of_neighbours_friend <- length(neighborhood(friend, order = 1, ran_actor_friend, 'out')[[1]])-1
+n_of_neighbours_work <- length(neighborhood(work, order = 1, ran_actor_work, 'out')[[1]])-1
+```
+
+First we select the threshold.
+
+```{r}
+threshold_prob_advice <- threshold(n_of_neighbours_advice)
+threshold_prob_friend <- threshold(n_of_neighbours_friend)
+threshold_prob_work <- threshold(n_of_neighbours_work)
+```
+
+```{r}
+results_icm_advice <- simulate_ICM(advice, threshold_prob_advice)
+results_icm_friend <- simulate_ICM(friend, threshold_prob_friend)
+results_icm_work <- simulate_ICM(work, threshold_prob_work)
+```
+
+```{r}
+sum(1:71)
+sum(unique(results_icm_advice[[7]]))
+results_icm_advice[1:7]
+```
+
+```{r}
+sum(1:71)-44-47
+sum(unique(results_icm_friend[[4]]))
+results_icm_friend[1:5]
+
+# 4 and 5 give the same results.
+```
+
+```{r}
+sum(1:71)-8
+sum(unique(results_icm_work[[4]]))
+results_icm_work[1:5]
+
+# All possible elements are in the 4th time spot.
 ```
