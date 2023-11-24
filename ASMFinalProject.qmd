@@ -1099,8 +1099,6 @@ calculate_assortativity <- function(graph, attribute) {
 advice_status_assortativity <- calculate_assortativity(advice, "status")
 print(advice_status_assortativity)
 ```
-<<<<<<< Updated upstream
-=======
 
 # 10) Community Detection
 
@@ -1143,7 +1141,7 @@ results_icm_work <- simulate_ICM(work, 0.2, external = FALSE)
 #sum(1:71)
 #sum(unique(results_icm_advice[[7]]))
 results_icm_advice#[1:7]
-# Converges in 7 steps
+# Converges in 4 steps
 ```
 
 ```{r}
@@ -1151,7 +1149,7 @@ results_icm_advice#[1:7]
 #sum(unique(results_icm_friend[[4]]))
 results_icm_friend#[1:5]
 
-# Converges in 4 steps
+# Converges in 7 steps
 ```
 
 ```{r}
@@ -1159,6 +1157,5 @@ results_icm_friend#[1:5]
 #sum(unique(results_icm_work[[4]]))
 results_icm_work#[1:5]
 
-# Converges in 4 steps.
+# Converges in 3 steps.
 ```
->>>>>>> Stashed changes

@@ -1,0 +1,1728 @@
+---
+title: "ASMFinalProject"
+format: html
+editor: visual
+---
+
+## Group Members
+
+Jan Maciejowski, Hiba Laziri, Esther-Gail Fraser, Sindi Bejko, Ayah El Barq, Saif Abu Shaqra
+
+```{r}
+# Base -----------------------------
+library(igraph)
+library(tidyverse)
+
+# Viz ------------------------------
+library(ggraph)
+library(RColorBrewer)
+
+# Other ----------------------------
+library(knitr)
+library(DT)
+
+#Correspondence---------------------
+library(FactoMineR)  
+library(factoextra) 
+```
+
+Loading Data Sets
+
+```{r}
+advice <- read.graph('./advice.gml', format = 'gml')
+friend <- read.graph('./friend.gml', format = 'gml')
+work <- read.graph('./work.gml', format = 'gml')
+learn_advice <- read.graph('./learn_advice.gml', format = 'gml')
+```
+
+Loading the IEASM package
+
+```{r}
+# To be changed accordingly 
+source("C:\\Users\\majon\\OneDrive\\Pulpit\\IE docs\\SEMESTER 5\\Anal. Social Networks\\Final Project\\IEASM.R")
+```
+
+First Plot Of The Graphs
+
+```{r}
+plot.igraph(advice)
+plot.igraph(friend)
+plot.igraph(work)
+plot.igraph(learn_advice)
+```
+
+As we can see we are dealing with a directed network in all cases, but with the work network which is un-directed as proven later by the triad census.
+
+Also, as we can see in work and friends, we have some detached components
+
+# 1) Local Level of Analysis
+
+```{r}
+nets <- list(advice, friend, work, learn_advice)
+names(nets) <- c("advice", 'friend', 'work', 'learn_advice')
+```
+
+```{r}
+for (i in nets){
+  print(is_directed(i))
+}
+```
+
+## Network Metrics
+
+```{r}
+metrics <- c()
+
+for (i in 1:length(nets)){
+metrics[[i]] <- c(gorder(nets[[i]]),
+gsize(nets[[i]]),
+average.path.length(nets[[i]]),
+transitivity(nets[[i]], type = "average"),
+transitivity(nets[[i]], type = "global"),
+edge_density(nets[[i]]))
+}
+
+metrics <- as.data.frame(do.call(rbind, metrics))
+colnames(metrics) <- c("N", "L", "APL", "LCC", "GCC", "Density")
+rownames(metrics) <- c("Advice", 'Friend', 'Work', 'Learn_advice')
+
+metrics
+```
+
+## Centralities
+
+```{r}
+# Parameters to be changed as needed
+centralities <- function(graph, normalized = TRUE, directed = FALSE){
+cent <- data.frame(degree = degree(graph, normalized = TRUE, mode = 'all'),
+betweenness = betweenness(graph,
+directed = directed,
+normalized = TRUE),
+closeness = closeness(graph, normalized = TRUE),
+pagerank = page.rank(graph)$vector,
+egcent = eigen_centrality(graph)$vector)
+return(cent)
+}
+
+centrality1 <- centralities(advice, directed = TRUE)
+centrality2 <- centralities(friend, directed = TRUE)
+centrality3 <- centralities(work, directed = FALSE)
+centrality4 <- centralities(learn_advice, directed = TRUE)
+```
+
+```{r}
+cents <- list(centrality1, centrality2, centrality3, centrality4)
+n <- 1
+
+for (i in cents){
+print(head(arrange(i, desc(closeness)), 3))
+}
+```
+
+To be changed accordingly, now by 'egcent'!
+
+```{r}
+#ADVICE
+#v26
+V(advice)[26]$status # Partner
+V(advice)[26]$sex #Male
+V(advice)[26]$office # Boston
+V(advice)[26]$tenure # 15
+V(advice)[26]$age # 41
+V(advice)[26]$practice #Litigation
+V(advice)[26]$school # Other
+degree(advice, 26, mode = 'in', normalized = TRUE) #More
+degree(advice, 26, mode = 'out', normalized = TRUE) #Less
+
+#V13
+V(advice)[13]$status # Partner
+V(advice)[13]$sex # Male
+V(advice)[13]$office # Boston
+V(advice)[13]$tenure # 22
+V(advice)[13]$age # 57
+V(advice)[13]$practice # Litigation
+V(advice)[13]$school # Yale
+degree(advice, 13, mode = 'in', normalized = TRUE) #More
+degree(advice, 13, mode = 'out', normalized = TRUE) #Less
+
+#V28
+V(advice)[28]$status # Partner
+V(advice)[28]$sex # Male
+V(advice)[28]$office # Hartford
+V(advice)[28]$tenure # 11
+V(advice)[28]$age # 38
+V(advice)[28]$practice # Corporate
+V(advice)[28]$school # Yale
+degree(advice, 28, mode = 'in', normalized = TRUE) #More
+degree(advice, 28, mode = 'out', normalized = TRUE) #Less
+```
+
+```{r}
+#FRIEND
+#v17
+V(advice)[17]$status # Partner
+V(advice)[17]$sex #Male
+V(advice)[17]$office # Boston
+V(advice)[17]$tenure # 23
+V(advice)[17]$age # 50
+V(advice)[17]$practice # Corporate
+V(advice)[17]$school # Harvard
+degree(friend, 17, mode = 'in', normalized = TRUE) #Less
+degree(friend, 17, mode = 'out', normalized = TRUE) #More
+
+#V24
+V(advice)[24]$status # Partner
+V(advice)[24]$sex # Male
+V(advice)[24]$office # Boston
+V(advice)[24]$tenure # 15
+V(advice)[24]$age # 44
+V(advice)[24]$practice # Litigation
+V(advice)[24]$school # Yale
+degree(friend, 24, mode = 'in', normalized = TRUE) #Less
+degree(friend, 24, mode = 'out', normalized = TRUE) #More
+
+#V31
+V(advice)[31]$status # Partner
+V(advice)[31]$sex # Male
+V(advice)[31]$office # Hartford
+V(advice)[31]$tenure # 8
+V(advice)[31]$age # 34
+V(advice)[31]$practice # Litigation
+V(advice)[31]$school # Yale
+degree(friend, 31, mode = 'in', normalized = TRUE) #Less
+degree(friend, 31, mode = 'out', normalized = TRUE) #More
+```
+
+```{r}
+#WORK
+#v16
+V(advice)[16]$status # Partner
+V(advice)[16]$sex #Male
+V(advice)[16]$office # Boston
+V(advice)[16]$tenure # 20
+V(advice)[16]$age # 46
+V(advice)[16]$practice # Corporate
+V(advice)[16]$school # Harvard
+
+#V22
+V(advice)[22]$status # Partner
+V(advice)[22]$sex # Male
+V(advice)[22]$office # Boston
+V(advice)[22]$tenure # 9
+V(advice)[22]$age # 49
+V(advice)[22]$practice # Litigation
+V(advice)[22]$school # Other
+```
+
+## Cut Points and Bridges
+
+```{r}
+for (i in nets){
+  print(articulation_points(i))
+  print(bridges(i))
+}
+```
+
+There is only one cut point and one bridge in graph friends. That is V15 and the bridge is from V15 to V37.
+
+## Degree Distribution
+
+```{r}
+par(mfrow=c(1, 4))
+hist(degree(advice), col="blue", main="Advice", xlab="Degree")
+hist(degree(friend), col="red", main="Friend", xlab="Degree")
+hist(degree(work), col="green", main="Work", xlab="Degree")
+hist(degree(learn_advice), col="yellow", main="Learn Advice", xlab="Degree")
+```
+
+# 2) Global Level of Analysis
+
+```{r}
+global_metrics <- c()
+
+for (i in 1:length(nets)){
+global_metrics[[i]] <- c(mean(degree(nets[[i]])),
+average.path.length(nets[[i]]),
+transitivity(nets[[i]], type = "average"),
+transitivity(nets[[i]], type = "global"),
+edge_density(nets[[i]]),
+reciprocity(nets[[i]]))
+}
+
+global_metrics <- as.data.frame(do.call(rbind, global_metrics))
+
+colnames(global_metrics) <- c("Average Degree", "APL", "LCC",
+"GCC", "Density", "Reciprocity")
+
+rownames(global_metrics) <- c("Advice", 'Friend', 'Work', 'Learn_advice')
+
+global_metrics
+```
+
+## Triad Census
+
+```{r}
+trd_census <- data.frame(row.names = c("003", "012", "102", "021D",
+"021U", "021C", "111D", "111U",
+"030T", "030C", "201", "120D",
+"120U", "120C", "210", "300"))
+
+for (i in 1:length(nets)){
+trd_census[names(nets)[i]] <- triad.census(nets[[i]])
+}
+
+trd_census
+```
+
+It seems like work is actually an un-directed network. Since it only has triads that do not have one sided connections. The rest of the graphs is surely directed.
+
+```{r}
+res.ca <- CA(trd_census, graph = FALSE)
+fviz_ca_biplot(res.ca, repel = TRUE)
+```
+
+## Centralizations
+
+```{r}
+centralization_func <- function(graph, directed = FALSE){
+centralizations <- data.frame(degree = centralization.degree(graph,
+mode = "all",
+loops = FALSE)$centralization,
+closeness = centralization.closeness(graph, mode = 'all')$centralization,
+betweenness = centralization.betweenness(graph,
+directed = directed)$centralization,
+evcent = centralization.evcent(graph)$centralization)
+return(centralizations)
+}
+
+centralization1 <- centralization_func(advice, directed = TRUE)
+centralization2 <- centralization_func(friend, directed = TRUE)
+centralization3 <- centralization_func(work, directed = FALSE)
+centralization4 <- centralization_func(learn_advice, directed = TRUE)
+```
+
+```{r}
+centralizations <- list(centralization1, centralization2, centralization3, centralization4)
+
+centralizations <- as.data.frame(do.call(rbind, centralizations))
+
+colnames(centralizations) <- c("Degree", "Closeness", "Betweenness", "Eigenvector")
+
+rownames(centralizations) <- c("Advice", 'Friend', 'Work', 'Learn_advice')
+
+centralizations
+```
+
+The NA-s introduced in closeness for friend and work are due to the disconnected components.
+
+That point is also to be made in the final paper!
+
+# 3) Groups and Subgroups
+
+## Largest Clique in each network
+
+```{r}
+largest.cliques(advice)
+clique.number(advice)
+```
+
+```{r}
+largest.cliques(friend)
+clique.number(friend)
+```
+
+```{r}
+largest.cliques(work)
+clique.number(work)
+```
+
+```{r}
+largest.cliques(learn_advice)
+clique.number(learn_advice)
+```
+
+## Coreness
+
+```{r}
+for (i in 1:length(nets)){
+kcores <- graph.coreness(nets[[i]])
+nets[[i]] <- set.vertex.attribute(nets[[i]],
+"coreness",
+value = kcores)
+colors <- colorRampPalette(c("blue", "green", "red"))(max(kcores))
+v_colors <- rep("gray", vcount(nets[[i]]))
+v_colors[kcores > 0] <- colors[kcores[kcores > 0]]
+nets[[i]] <- set.vertex.attribute(nets[[i]],
+"color",
+value = v_colors)
+name <- paste0("graph_", i)
+assign(name, nets[[i]])
+}
+```
+
+```{r}
+for (i in 1:length(nets)){
+name <- paste0("subgraph_maxcore_", i)
+assign(name,
+induced.subgraph(nets[[i]],
+vids = which(V(nets[[i]])$coreness > max(V(nets[[i]])$coreness)-1)))
+}
+```
+
+```{r}
+par(mfrow = c(2,2))
+
+plot(subgraph_maxcore_1,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_1)$color,
+vertex.size = degree(subgraph_maxcore_1)*0.6,
+main = paste0("Advice - Max coreness: ",
+max(V(subgraph_maxcore_1)$coreness), ", N: ",
+gorder(subgraph_maxcore_1)))
+
+plot(subgraph_maxcore_2,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_2)$color,
+vertex.size = degree(subgraph_maxcore_2)*0.6,
+main = paste0("Friend - Max coreness: ",
+max(V(subgraph_maxcore_2)$coreness), ", N: ",
+gorder(subgraph_maxcore_2)))
+
+plot(subgraph_maxcore_3,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_3)$color,
+vertex.size = degree(subgraph_maxcore_3)*0.6,
+main = paste0("Work - Max coreness: ",
+max(V(subgraph_maxcore_3)$coreness), ", N: ",
+gorder(subgraph_maxcore_3)))
+
+plot(subgraph_maxcore_4,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_3)$color,
+vertex.size = degree(subgraph_maxcore_3)*0.6,
+main = paste0("Learn Advice - Max coreness: ",
+max(V(subgraph_maxcore_3)$coreness), ", N: ",
+gorder(subgraph_maxcore_3)))
+```
+
+For a better visibility.
+
+```{r}
+plot(subgraph_maxcore_1,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_1)$color,
+vertex.size = degree(subgraph_maxcore_1)*0.6,
+main = paste0("Advice - Max coreness: ",
+max(V(subgraph_maxcore_1)$coreness), ", N: ",
+gorder(subgraph_maxcore_1)))
+```
+
+```{r}
+plot(subgraph_maxcore_2,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_2)$color,
+vertex.size = degree(subgraph_maxcore_2)*0.6,
+main = paste0("Friend - Max coreness: ",
+max(V(subgraph_maxcore_2)$coreness), ", N: ",
+gorder(subgraph_maxcore_2)))
+```
+
+```{r}
+plot(subgraph_maxcore_3,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_3)$color,
+vertex.size = degree(subgraph_maxcore_3)*0.6,
+main = paste0("Work - Max coreness: ",
+max(V(subgraph_maxcore_3)$coreness), ", N: ",
+gorder(subgraph_maxcore_3)))
+```
+
+```{r}
+plot(subgraph_maxcore_4,
+edge.arrow.size = 0.001,
+layout = layout_nicely,
+vertex.label.color = "black",
+vertex.color = V(subgraph_maxcore_3)$color,
+vertex.size = degree(subgraph_maxcore_3)*0.6,
+main = paste0("Learn Advice - Max coreness: ",
+max(V(subgraph_maxcore_3)$coreness), ", N: ",
+gorder(subgraph_maxcore_3)))
+```
+
+# 4) Dyadic Level of Analysis
+
+## Similarities
+
+```{r}
+sapply(nets, function(x) max_alpha(x))
+```
+
+```{r}
+for(i in 1:length(nets)){
+cat(paste("Network: ", names(nets)[i], "\n"))
+kable(similarities(nets[[i]], "jaccard"), align = "cc")
+kable(similarities(nets[[i]], "katz", 0.05), align = "cc")
+}
+```
+
+```{r}
+# As an example
+V(advice)[55];V(advice)[52]
+```
+
+## Modularity
+
+```{r}
+Q.degree <- function(graph){
+L <- gsize(graph)
+deg <- degree(graph, mode="all")
+delta <- diag(nrow = gorder(graph))
+a <- delta * deg # Be careful with this multiplication
+kk <- deg %*% t(deg)
+adj_mat <- as.matrix(as_adjacency_matrix(graph))
+return(mtrace((adj_mat - kk/(2*L)) %*% kk)/mtrace((a-kk/(2*L)) %*% kk))
+}
+```
+
+```{r}
+modularity_degree <- c()
+for (i in 1:length(nets)){
+modularity_degree[[i]] <- c(Q.degree(nets[[i]]),
+assortativity.degree(nets[[i]]))
+}
+modularity_degree <- as.data.frame(do.call(rbind, modularity_degree))
+colnames(modularity_degree) <- c("Modularity by Degree", "Assortativity Degree")
+rownames(modularity_degree) <- c("Advice", 'Friend', 'Work', 'Learn_advice')
+
+modularity_degree
+```
+
+Since the function Q.degree is made for directed graphs it is less credible then the assortativity degree metric.
+
+## Assortativity
+
+```{r}
+deg_correl <- setNames(as.data.frame(matrix(ncol = 3, nrow = 0)),
+c("degree", "correlation", "network"))
+
+n <- 1
+
+for (i in 1:length(nets)){
+deg_correl_func <- knn(nets[[i]])
+tmp <- data.frame(degree = 1:length(deg_correl_func$knnk),
+correlation = deg_correl_func$knnk,
+network = rep(paste0("graph", n),
+length(deg_correl_func$knnk))) %>%
+dplyr::filter(!is.na(correlation))
+deg_correl <- rbind(deg_correl, tmp)
+n <- n+1
+}
+```
+
+```{r}
+plot_deg_correl <- function(data, title){
+data %>%
+ggplot(aes(x = degree, y = correlation)) +
+geom_point()+
+scale_x_log10() +
+scale_y_log10() +
+geom_smooth(method = "lm", formula = "y~x") +
+labs(title = title,
+y = expression("k"["nn"]("k")),
+x = expression("k")) +
+geom_hline(aes(yintercept = mean(degree**2)/mean(degree)), color = "red") +
+theme_bw() +
+theme(plot.title = element_text(hjust = 0.5, size = 20),
+axis.title = element_text(size = 15))
+}
+```
+
+```{r}
+advice_dcf <- plot_deg_correl(deg_correl[deg_correl$network == "graph1", ],
+paste("Advice"))
+
+friend_dcf <- plot_deg_correl(deg_correl[deg_correl$network == "graph2", ],
+paste("Friend"))
+
+work_dcf <- plot_deg_correl(deg_correl[deg_correl$network == "graph3", ],
+paste("Work"))
+
+learn_advice_dcf <- plot_deg_correl(deg_correl[deg_correl$network == "graph4", ],
+paste("Learn Advice"))
+
+cowplot::plot_grid(advice_dcf,
+friend_dcf,
+work_dcf,
+learn_advice_dcf,
+nrow = 1, ncol = 4)
+```
+
+## Degree Correlation Function
+
+```{r}
+model1 <- lm(log(correlation) ~ log(degree),
+data = deg_correl[deg_correl$network == "graph1", ])
+
+model2 <- lm(log(correlation) ~ log(degree),
+data = deg_correl[deg_correl$network == "graph2", ])
+
+model3 <- lm(log(correlation) ~ log(degree),
+data = deg_correl[deg_correl$network == "graph3", ])
+
+model4 <- lm(log(correlation) ~ log(degree),
+data = deg_correl[deg_correl$network == "graph4", ])
+
+models <- list(model1, model2, model3, model4)
+estimates <- data.frame(row.names = c("Low", "High"))
+
+i <- 1
+
+for (i in 1:length(models)){
+clname <- paste0("graph", i)
+cint <- confint(models[[i]], 'log(degree)', level=0.99)
+estimates[clname] <- c(cint[1], cint[2])
+i <- i + 1
+}
+
+estimates
+```
+
+## Assortativity Forces
+
+Well since the attributes are exactly the same for each graph and we illustrate different graphs regarding the same organization at the same way point, there is no sense in testing for both homophiliy and influence as we would have to compare the graphs at a different time, to see those effects.
+
+# 5) Further EDA
+
+Those are the attributes!
+
+1.  status (1=partner; 2=associate)
+
+2.  gender (1=man; 2=woman)
+
+3.  office (1=Boston; 2=Hartford; 3=Providence)
+
+4.  years with the firm
+
+5.  age
+
+6.  practice (1=litigation; 2=corporate)
+
+7.  law school (1: harvard, yale; 2: ucon; 3: other)
+
+```{r}
+#V(advice)$id
+#V(advice)$name
+
+print("Status:")
+table(V(advice)$status)
+print('Sex:')
+table(V(advice)$sex)
+print("Office:")
+table(V(advice)$office)
+
+hist(V(advice)$tenure)
+
+hist(V(advice)$age)
+print("Practice:")
+table(V(advice)$practice)
+print('School:')
+table(V(advice)$school)
+```
+
+Tenure is mostly very young, up to 10 years. Age is mostly in early 30s. There is not a lot of under 30s. Gender mostly men, 36 partners and 35 associates. Mostly Boston based, working litigation, but corp is strong as well. 15 out of Harvard, 28 Yale, 28 others.
+
+# 6) Randomness and Graph Type
+
+```{r}
+for (i in 1:length(nets)){
+  name1 <- names(nets[i])
+  acc <- (gsize(nets[[i]])/gorder(nets[[i]]))/(gorder(nets[[i]])-1)
+  prob1 <- 1/(gorder(nets[[i]])-1)
+  if (acc < prob1){
+    cat('The Average Clustering Coef. is:', acc, 'and the graph', name1,'is SUBCRITICAL \n')
+  } else if (acc == prob1) {
+    cat('The Average Clustering Coef. is:', acc, 'and the graph', name1,'is CRITICAL \n')
+  } else if (acc > prob1) {
+    cat('The Average Clustering Coef. is:', acc, 'and the graph', name1,'is SUPERCRITICAL \n')
+  } 
+  if (is.connected(nets[[i]])) {
+    cat('The Average Clustering Coef. is:', acc, 'and the graph', name1,'is CONNECTED \n')
+  }
+}
+
+
+```
+
+```{r}
+set.seed(101)
+
+random_advice <- erdos.renyi.game(71, 0.1794769, directed = TRUE)
+random_friend <- erdos.renyi.game(71, 0.1156942, directed = TRUE)
+random_work <- erdos.renyi.game(71, 0.1521127, directed = FALSE)
+random_learn_advice <- erdos.renyi.game(71, 0.1794769, directed = TRUE)
+```
+
+```{r}
+nets_random <- list(random_advice, random_friend, random_work, random_learn_advice)
+
+metrics_random <- c()
+
+for (i in 1:length(nets_random)){
+metrics_random[[i]] <- c(gorder(nets_random[[i]]),
+gsize(nets_random[[i]]),
+average.path.length(nets_random[[i]]),
+transitivity(nets_random[[i]], type = "average"),
+transitivity(nets_random[[i]], type = "global"),
+edge_density(nets_random[[i]]))
+}
+
+metrics_random <- as.data.frame(do.call(rbind, metrics_random))
+colnames(metrics_random) <- c("N", "L", "APL", "LCC", "GCC", "Density")
+rownames(metrics_random) <- c("Advice Random", 'Friend Random', 'Work Random', 'Learn Advice Random')
+
+metrics_random
+```
+
+```{r}
+ks_test_randomness <- ks.test(degree.distribution(advice), degree.distribution(random_advice))
+print(ks_test_randomness)
+```
+
+Small World Avg. Path Length
+
+```{r}
+for (i in 1:length(nets)){
+  name1 <- names(nets[i])
+  avg_pl <- log(gorder(nets[[i]]))/log((gsize(nets[[i]])/gorder(nets[[i]])))
+  cat('The Small World APL is:', avg_pl, 'and the graph', name1,'is CONNECTED \n')
+}
+```
+
+# 7) ERGM Models
+
+```{r}
+library(ergm)
+```
+
+```{r}
+attributes_df <- data.frame(id = V(advice)$id, name = V(advice)$name, status = V(advice)$status, sex = V(advice)$sex, office = V(advice)$office, tenure = V(advice)$tenure, age = V(advice)$age, practice = V(advice)$practice, school = V(advice)$school, degree_cent = centrality1$degree, betweenness_cent = centrality1$betweenness, closeness_cent = centrality1$closeness, egcent_cent = centrality1$egcent)
+attributes_df
+```
+
+```{r}
+row.names(attributes_df) <- attributes_df$name
+attributes_df <- attributes_df[match(network.vertex.names(advice_net), row.names(attributes_df)), ]
+attributes_df
+```
+
+```{r}
+advice_edges <- as_edgelist(advice)
+advice_net <- network(advice_edges)
+
+advice_net %v% 'id' <- attributes_df$id
+advice_net %v% 'name' <- attributes_df$name
+advice_net %v% 'status' <- attributes_df$status
+advice_net %v% 'sex' <- attributes_df$sex
+advice_net %v% 'office' <- attributes_df$office
+advice_net %v% 'tenure' <- attributes_df$tenure
+advice_net %v% 'age' <- attributes_df$age
+advice_net %v% 'practice' <- attributes_df$practice
+advice_net %v% 'school' <- attributes_df$school
+
+advice_net %v% 'degree_cent' <- attributes_df$degree_cent
+advice_net %v% 'betweenness_cent' <- attributes_df$betweenness_cent
+advice_net %v% 'closeness_cent' <- attributes_df$closeness_cent
+advice_net %v% 'egcent_cent' <- attributes_df$egcent_cent
+```
+
+```{r}
+# DO NOT RUN
+advice_net <- advice
+for (i in 1:71){
+  V(advice_net)[i]$id <- i
+}
+```
+
+```{r}
+plot(advice_net)
+```
+
+Node Level Effects
+
+Increase or decrease in the odds that a tie is present in the network for every tie, being both coefficients statistically relevant
+
+```{r}
+#Node level effects
+model1 <- ergm(advice_net ~ edges + nodecov('tenure') + nodecov('age') + nodematch('status') + nodematch('sex') + nodematch('office') + + nodematch('practice') + nodematch('school') + nodematch('degree_cent'))
+summary(model1)
+
+# nodematch('betweenness_cent') + nodematch('egcent_cent')
+```
+
+The log-odds of a within-group tie are nx greater than an across-group tie. - Nodematch
+
+```{r}
+model2 <- ergm(advice_net ~ edges + nodecov('tenure') + nodecov('age') + nodemix('status') + nodemix('sex') + nodemix('office') + nodemix('practice') + nodemix('school'))
+summary(model2)
+```
+
+```{r}
+model3 <- ergm(advice_net ~ edges + nodecov('tenure') + nodematch('status') + nodemix('practice') + nodematch('sex') + nodematch('office') + absdiff('degree_cent') + absdiff('betweenness_cent') + absdiff('egcent_cent'))
+summary(model3)
+```
+
+```{r}
+#+ edgecov(advice_net)
+
+model4 <- ergm(advice_net ~ edges + nodecov('tenure') + nodecov('age') + absdiff('status') + absdiff('sex') + absdiff('office') + absdiff('practice') + absdiff('school') + absdiff('degree_cent') + absdiff('betweenness_cent') + absdiff('egcent_cent'))
+summary(model4)
+```
+
+```{r}
+new_attr_df <- attributes_df %>% select(status, sex, office, tenure, age, practice, school, degree_cent, betweenness_cent, egcent_cent)
+```
+
+```{r}
+friend_edges <- as_edgelist(friend)
+friend_net <- network(friend_edges)
+
+work_edges <- as_edgelist(work)
+work_net <- network(work_edges)
+```
+
+```{r}
+model5 <- ergm(advice_net ~ edges + edgecov(work_net) + dyadcov(friend_net))
+summary(model5)
+```
+
+```{r}
+model6 <- ergm(advice_net ~ edges + gwesp(2, fixed = TRUE, cutoff = 50))
+summary(model6)
+```
+
+```{r}
+model_final <- ergm(advice_net ~ edges + nodecov('tenure') + nodematch('status') + nodemix('practice') + nodematch('sex') + nodematch('office') + absdiff('degree_cent') + absdiff('betweenness_cent') + absdiff('egcent_cent') + edgecov(work_net) + dyadcov(friend_net))
+summary(model_final)
+```
+
+# 8) Network Randomness 2
+
+```{r}
+# node attributes
+cat("Node attributes:\n")
+print(V(advice_network))
+cat("Node attributes:\n")
+print(V(friend_network))
+cat("Node attributes:\n")
+print(V(learn_advice_network))
+cat("Node attributes:\n")
+print(V(work_network))
+
+# edge attributes
+cat("\nEdge attributes:\n")
+print(E(advice_network))
+cat("\nEdge attributes:\n")
+print(E(friend_network))
+cat("\nEdge attributes:\n")
+print(E(learn_advice_network))
+cat("\nEdge attributes:\n")
+print(E(work_network))
+```
+
+Comparing the statistics of the three networks with their respective random networks
+
+```{r}
+# Degree distribution
+# advice_network
+
+print('average degree of the networks')
+
+degree_dist_advice <- mean(degree(advice_network))
+degree_dist_random_advice <- mean(degree(random_advice))
+print(degree_dist_advice)
+print(degree_dist_random_advice)
+
+# friend network
+
+degree_dist_friend <- mean(degree(friend_network))
+degree_dist_random_friend <- mean(degree(random_friend))
+print(degree_dist_friend)
+print(degree_dist_random_friend)
+
+# work network
+
+degree_dist_work <- mean(degree(work_network))
+degree_dist_random_work <- mean(degree(random_work))
+print(degree_dist_work)
+print(degree_dist_random_work)
+```
+
+```{r}
+# Clustering coefficients
+#advice network
+
+
+print("Clustering coefficients")
+cc_advice <- transitivity(advice_network)
+cc_random_advice <- transitivity(random_advice)
+print(cc_advice)
+print(cc_random_advice)
+
+
+#friend network
+cc_friend <- transitivity(friend_network)
+cc_random_friend <- transitivity(random_friend)
+print(cc_friend)
+print(cc_random_friend)
+
+
+# work network
+cc_work <- transitivity(work_network)
+cc_random_work <- transitivity(random_advice)
+print(cc_work)
+print(cc_random_work)
+```
+
+```{r}
+#average path length
+
+print('average path lenghts')
+
+apl_friend <- average.path.length(friend_network)
+apl_random_friend <- average.path.length(random_friend)
+print(apl_friend)
+print(apl_random_friend)
+
+apl_work <- average.path.length(work_network)
+apl_random_work <- average.path.length(random_work)
+print(apl_work)
+print(apl_random_work)
+
+apl_advice <- average.path.length(advice_network)
+apl_random_advice <- average.path.length(random_advice)
+print(apl_advice)
+print(apl_random_advice)
+```
+
+Community detection
+
+\- To perform community detection using the louvain algorithm, the networks have to be converted to undirected which may result in an information loss with will be expanded on in the report
+
+```{r}
+# advice network
+
+# Converting directed graph to undirected # may result in an information loss
+advice_network_undirected <- as.undirected(advice_network, mode = "mutual")  # considering mutual edges
+
+# Louvain method
+community_louvain <- cluster_louvain(advice_network_undirected)
+plot(community_louvain, advice_network_undirected)
+
+# friend network
+
+# Converting directed graph to undirected
+friend_network_undirected <- as.undirected(friend_network, mode = "mutual")  # considering mutual edges
+
+#  Louvain method
+community_louvain <- cluster_louvain(friend_network_undirected)
+plot(community_louvain, friend_network_undirected)
+
+# work network
+# Converting directed graph to undirected
+work_network_undirected <- as.undirected(work_network, mode = "mutual")  # considering mutual edges
+
+#  Louvain method
+community_louvain <- cluster_louvain(work_network_undirected)
+plot(community_louvain, work_network_undirected)
+```
+
+Hierarchy and centralisation
+
+```{r}
+# Betweenness centrality
+betweenness_centrality <- betweenness(advice_network)
+
+# Closeness centrality
+closeness_centrality <- closeness(advice_network)
+
+# Eigenvector centrality
+eigenvector_centrality <- eigen_centrality(advice_network)$vector
+```
+
+Identifying the Bridge nodes in the networks
+
+```{r}
+# Nodes with high betweenness centrality can be considered as bridges
+sorted_betweenness <- sort(betweenness_centrality, decreasing = TRUE)# identilfying the top ones
+
+top_n_brokers <- head(sorted_betweenness, n = 10)
+print(top_n_brokers)
+```
+
+# 9) Further Study of Attribute Influence
+
+```{r}
+analyze_attribute_influence <- function(graph, attribute) {
+  # Check if the attribute exists
+  if (!attribute %in% names(vertex_attr(graph))) {
+    stop(paste("Attribute", attribute, "not found in the graph vertices."))
+  }
+  
+  # Extract vertex attributes
+  attribute_values <- vertex_attr(graph)[[attribute]]
+  
+  # Calculate degree for each vertex
+  degrees <- degree(graph)
+  
+  # Create a data frame
+  df <- data.frame(attribute = attribute_values, degree = degrees)
+  
+  # Aggregate and summarize data
+  attribute_influence <- df %>%
+    group_by(attribute) %>%
+    summarise(average_degree = mean(degree),
+              count = n())
+  
+  return(attribute_influence)
+}
+```
+
+```{r}
+# Example usage for the 'advice' network and 'status' attribute
+advice_status_influence <- analyze_attribute_influence(advice, "status")
+print(advice_status_influence)
+
+# Repeat this process for other attributes like 'sex', 'office', etc.
+advice_sex_influence <- analyze_attribute_influence(advice, "sex")
+print(advice_sex_influence)
+
+# Analyze attribute influence for 'office'
+advice_office_influence <- analyze_attribute_influence(advice, "office")
+print(advice_office_influence)
+
+# Analyze attribute influence for 'practice'
+advice_practice_influence <- analyze_attribute_influence(advice, "practice")
+print(advice_practice_influence)
+
+# Analyze attribute influence for 'school'
+advice_school_influence <- analyze_attribute_influence(advice, "school")
+print(advice_school_influence)
+```
+
+Betweenness Centrality
+
+This measure can help to identify individuals who serve as bridges in the network communication paths.
+
+```{r}
+# Function to analyze betweenness centrality based on attributes
+analyze_betweenness <- function(graph, attribute) {
+  if (!attribute %in% names(vertex_attr(graph))) {
+    stop(paste("Attribute", attribute, "not found in the graph vertices."))
+  }
+  
+  attribute_values <- vertex_attr(graph)[[attribute]]
+  betweenness_values <- betweenness(graph)
+  
+  df <- data.frame(attribute = attribute_values, betweenness = betweenness_values)
+  attribute_betweenness <- df %>%
+    group_by(attribute) %>%
+    summarise(average_betweenness = mean(betweenness),
+              count = n())
+  
+  return(attribute_betweenness)
+}
+```
+
+```{r}
+# Example usage for the 'advice' network and 'status' attribute
+advice_status_betweenness <- analyze_betweenness(advice, "status")
+print(advice_status_betweenness)
+```
+
+```{r}
+# Function to analyze eigenvector centrality based on attributes
+analyze_eigenvector <- function(graph, attribute) {
+  if (!attribute %in% names(vertex_attr(graph))) {
+    stop(paste("Attribute", attribute, "not found in the graph vertices."))
+  }
+  
+  attribute_values <- vertex_attr(graph)[[attribute]]
+  eigenvector_values <- eigen_centrality(graph)$vector
+  
+  df <- data.frame(attribute = attribute_values, eigenvector = eigenvector_values)
+  attribute_eigenvector <- df %>%
+    group_by(attribute) %>%
+    summarise(average_eigenvector = mean(eigenvector),
+              count = n())
+  
+  return(attribute_eigenvector)
+}
+```
+
+```{r}
+# Example usage for the 'advice' network and 'status' attribute
+advice_status_eigenvector <- analyze_eigenvector(advice, "status")
+print(advice_status_eigenvector)
+```
+
+Assortativity Coefficient
+
+```{r}
+calculate_assortativity <- function(graph, attribute) {
+  if (!attribute %in% names(vertex_attr(graph))) {
+    stop(paste("Attribute", attribute, "not found in the graph vertices."))
+  }
+  
+  attribute_values <- vertex_attr(graph)[[attribute]]
+  assortativity_coefficient <- assortativity(graph, attribute_values, directed = TRUE)
+  
+  return(assortativity_coefficient)
+}
+```
+
+```{r}
+# Example usage for the 'advice' network and 'status' attribute
+advice_status_assortativity <- calculate_assortativity(advice, "status")
+print(advice_status_assortativity)
+```
+
+# 10) Community Detection
+
+```{r}
+node_attributes <- V(advice)$attribute_name
+node_attributes
+```
+
+```{r}
+edge_attributes <- E(work)$attribute_name
+edge_attributes
+```
+
+VISUALING THE GRAPHS
+
+```{r}
+# Visualising the graphs first 
+plot(work, layout = layout_with_fr)
+
+```
+
+### Louvain Algorithm
+
+❗Note that Louvain method only works with undirected graphs, so i'm going to convert each network to undirected ones, and run the community detection algorithm. This does however mean that there will be some information loss.
+
+Louvain Method \| Work Network
+
+```{r}
+# WORK 
+# Convert directed graph to undirected
+undirected_work <- as.undirected(work, mode = "collapse")
+
+# Perform Louvain community detection on the undirected graph
+louvain_communities_w <- cluster_louvain(undirected_work)
+print(louvain_communities_w)
+```
+
+```{r}
+# Plot the graph and color nodes based on Louvain community membership
+plot(louvain_communities_w, work, vertex.color = membership(louvain_communities_w), 
+     vertex.label = NA, main = "Community Detection on WORK networkusing Louvain Method")
+
+# Create a legend for the communities
+legend_text_w <- sapply(unique(membership(louvain_communities_w)), function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+legend("topright", legend = legend_text_w, fill = palette()[unique(membership(louvain_communities_w))])
+```
+
+Louvain Method \| LEARN & Advice Network
+
+```{r}
+# LEARN & ADVICE
+# Convert directed graph to undirected
+undirected_la <- as.undirected(learn_advice, mode = "collapse")
+
+# Perform Louvain community detection on the undirected graph
+louvain_communities_la <- cluster_louvain(undirected_la)
+print(louvain_communities_la)
+```
+
+```{r}
+# Plot the graph and color nodes based on Louvain community membership
+plot(louvain_communities_la, learn_advice, vertex.color = membership(louvain_communities_la), 
+     vertex.label = NA, main = "Community Detection on LEARN & ADVICE networks using Louvain Method")
+
+# Create a legend for the communities
+legend_text_la <- sapply(unique(membership(louvain_communities_la)), function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+legend("topright", legend = legend_text_la, fill = palette()[unique(membership(louvain_communities_la))])
+```
+
+Louvain Method \| ADVICE
+
+```{r}
+# ADVICE 
+# Convert directed graph to undirected
+undirected_a <- as.undirected(advice, mode = "collapse")
+
+# Perform Louvain community detection on the undirected graph
+louvain_communities_a <- cluster_louvain(undirected_a)
+print(louvain_communities_a)
+```
+
+```{r}
+# Plot the graph and color nodes based on Louvain community membership
+plot(louvain_communities_a,advice, vertex.color = membership(louvain_communities_a), 
+     vertex.label = NA, main = "Community Detection on ADVICE networks using Louvain Method")
+
+# Create a legend for the communities
+legend_text_a <- sapply(unique(membership(louvain_communities_a)), function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+legend("topright", legend = legend_text_a, fill = palette()[unique(membership(louvain_communities_a))])
+```
+
+Louvain Method \| Friend
+
+```{r}
+# FRIEND NETWORK
+# Convert directed graph to undirected
+undirected_f <- as.undirected(friend, mode = "collapse")
+
+# Perform Louvain community detection on the undirected graph
+louvain_communities_f <- cluster_louvain(undirected_f)
+print(louvain_communities_f)
+```
+
+```{r}
+# Plot the graph and color nodes based on Louvain community membership
+plot(louvain_communities_f, friend, vertex.color = membership(louvain_communities_f), 
+     vertex.label = NA, main = "Community Detection on FRIEND networks using Louvain Method")
+
+# Create a legend for the communities
+legend_text_f <- sapply(unique(membership(louvain_communities_f)), function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+legend("topright", legend = legend_text_f, fill = palette()[unique(membership(louvain_communities_f))])
+```
+
+### Edge Betweeness
+
+Edge Betweeness \| Work Network
+
+```{r}
+ebc_work <- edge.betweenness.community(work)
+print(ebc_work)
+```
+
+```{r}
+plot(ebc_work, work, vertex.color = membership(ebc_work), vertex.label = NA)
+# Get unique community memberships
+unique_communities <- unique(membership(ebc_work))
+
+# Create a legend for the communities
+legend_text <- sapply(unique_communities, function(community) {
+  paste("Community", community, sep = ": ")
+})
+```
+
+Edge Betweeness \| Learn & Advice Network
+
+```{r}
+ebc_learnadvice <- edge.betweenness.community(learn_advice)
+print(learn_advice)
+```
+
+```{r}
+# visualising the learn_advice
+plot(ebc_learnadvice, learn_advice, vertex.color = membership(ebc_learnadvice), vertex.label = NA)
+
+# Get unique community memberships
+unique_communities_la <- unique(membership(ebc_learnadvice))
+
+# Create a legend for the communities
+legend_text <- sapply(unique_communities_la, function(community) {
+  paste("Community", community, sep = ": ")
+})
+```
+
+Edge betweeness \| Advice
+
+```{r}
+ebc_advice <- edge.betweenness.community(advice)
+print(advice)
+```
+
+```{r}
+# visualising membership advice
+plot(ebc_advice, advice, vertex.color = membership(ebc_advice), vertex.label = NA)
+# Get unique community memberships
+unique_communities_advice <- unique(membership(ebc_advice))
+
+# Create a legend for the communities
+legend_text <- sapply(unique_communities_advice, function(community) {
+  paste("Community", community, sep = ": ")
+})
+```
+
+Edge betweeness \| Friend
+
+```{r}
+ebc_friend <- edge.betweenness.community(friend)
+print(friend)
+```
+
+```{r}
+# visualising membership friend communities 
+plot(ebc_friend, friend, vertex.color = membership(ebc_friend), vertex.label = NA)
+# Get unique community memberships
+unique_communities_friend <- unique(membership(ebc_friend))
+
+# Create a legend for the communities
+legend_text <- sapply(unique_communities_friend, function(community) {
+  paste("Community", community, sep = ": ")
+})
+
+
+```
+
+### Greedy Algorithm
+
+❗this algorithm also only works on undirected graphs as well, so gonna call the variables from earlier that made each network undirected
+
+Undirected versions of each network:
+
+-   work = undirected_work
+
+-   learn&advice = undirected_la
+
+-   advice = undirected_a
+
+-   friend = undirected_f
+
+Greedy Method \| Work Network
+
+```{r}
+# Perform Greedy Modularity community detection
+greedy_modularity_communities_w <- cluster_fast_greedy(undirected_work)
+print(greedy_modularity_communities_w)
+
+# Visualize the communities
+plot(greedy_modularity_communities_w, undirected_work, vertex.color = membership(greedy_modularity_communities_w), 
+     vertex.label = NA, main = "Community Detection WORK network using Greedy Modularity Algorithm")
+```
+
+Greedy Method \| Learn & Advice
+
+```{r}
+# Perform Greedy Modularity community detection
+greedy_modularity_communities_la <- cluster_fast_greedy(undirected_la)
+print(greedy_modularity_communities_la)
+
+# Visualize the communities
+plot(greedy_modularity_communities_la, undirected_la, vertex.color = membership(greedy_modularity_communities_la), 
+     vertex.label = NA, main = "Community Detection LEARN & ADVICE  network using Greedy Modularity Algorithm")
+```
+
+Greedy Method \| Advice
+
+```{r}
+# Perform Greedy Modularity community detection
+greedy_modularity_communities_a <- cluster_fast_greedy(undirected_a)
+print(greedy_modularity_communities_a)
+
+# Visualize the communities
+plot(greedy_modularity_communities_a, undirected_a, vertex.color = membership(greedy_modularity_communities_a), 
+     vertex.label = NA, main = "Community Detection ADVICE  network using Greedy Modularity Algorithm")
+```
+
+Greedy Method \| Friend
+
+```{r}
+# Perform Greedy Modularity community detection
+greedy_modularity_communities_f <- cluster_fast_greedy(undirected_f)
+print(greedy_modularity_communities_f)
+
+# Visualize the communities
+plot(greedy_modularity_communities_f, undirected_f, vertex.color = membership(greedy_modularity_communities_f), 
+     vertex.label = NA, main = "Community Detection FRIEND  network using Greedy Modularity Algorithm")
+```
+
+### InfoMap Algorithm
+
+InfoMap Method \| Work Network
+
+```{r}
+# Visualize the graph
+plot(work, vertex.label = NA, main = "Original Work Graph")
+
+# Community detection using Infomap
+infomap_communities <- cluster_infomap(work)
+
+# Get the membership of nodes in communities
+membership <- membership(infomap_communities)
+
+# Print the communities
+print(membership)
+
+# Plot the graph with communities highlighted by colors
+plot(work, vertex.label = NA, main = "Graph with Infomap Communities")
+plot(infomap_communities, work, vertex.size = 8, vertex.label = NA)
+```
+
+```{r}
+# Calculate modularity
+modularity_value <- modularity(infomap_communities, work)
+
+# Print modularity value
+cat("Modularity:", modularity_value, "\n")
+```
+
+InfoMap method \| Learn & Advice
+
+```{r}
+# Visualize the graph
+plot(work, vertex.label = NA, main = "Original Work Graph")
+
+# Community detection using Infomap
+infomap_communities_la <- cluster_infomap(learn_advice)
+
+# Get the membership of nodes in communities
+membership_la <- membership(infomap_communities_la)
+
+# Print the communities
+print(membership_la)
+
+# Plot the graph with communities highlighted by colors
+plot(work, vertex.label = NA, main = "Graph with Infomap Communities")
+plot(infomap_communities_la, learn_advice, vertex.size = 8, vertex.label = NA)
+```
+
+```{r}
+# Calculate modularity
+modularity_value_la <- modularity(infomap_communities_la, learn_advice)
+
+# Print modularity value
+cat("Modularity:", modularity_value_la, "\n")
+```
+
+InfoMap Method \| Advice Network
+
+```{r}
+# Visualize the graph
+plot(advice, vertex.label = NA, main = "Original Advice Graph")
+
+# Community detection using Infomap
+infomap_communities_a <- cluster_infomap(advice)
+
+# Get the membership of nodes in communities
+membership_a <- membership(infomap_communities_a)
+
+# Print the communities
+print(membership_a)
+
+# Plot the graph with communities highlighted by colors
+plot(advice, vertex.label = NA, main = "Graph with Infomap Communities")
+plot(infomap_communities_a, advice, vertex.size = 8, vertex.label = NA)
+```
+
+```{r}
+# Calculate modularity
+modularity_value_a <- modularity(infomap_communities_a, advice)
+
+# Print modularity value
+cat("Modularity:", modularity_value_a, "\n")
+```
+
+InfoMap Method \| Friendship Network
+
+```{r}
+# Visualize the graph
+plot(friend, vertex.label = NA, main = "Original Friend Graph")
+
+# Community detection using Infomap
+infomap_communities_f <- cluster_infomap(friend)
+
+# Get the membership of nodes in communities
+membership_f <- membership(infomap_communities_f)
+
+# Print the communities
+print(membership_f)
+
+# Plot the graph with communities highlighted by colors
+plot(advice, vertex.label = NA, main = "Graph with Infomap Communities")
+plot(infomap_communities_f, friend, vertex.size = 8, vertex.label = NA)
+```
+
+```{r}
+# Calculate modularity
+modularity_value_f <- modularity(infomap_communities_f, friend)
+
+# Print modularity value
+cat("Modularity:", modularity_value_f, "\n")
+```
+
+### Analyzing all the networks
+
+Calculating the modularity scores for each network
+
+```{r}
+# Assuming you have lists of detected communities for each algorithm
+louvain_communities_list <- list(louvain_communities_w,louvain_communities_la, louvain_communities_a, louvain_communities_f )  # Louvain communities for each network
+
+greedy_modularity_communities_list <- list(greedy_modularity_communities_w,greedy_modularity_communities_la, greedy_modularity_communities_a, greedy_modularity_communities_f )  # Greedy Modularity communities for each network
+
+edge_betweenness_communities_list <- list(ebc_work,ebc_learnadvice,ebc_advice,ebc_friend   )  # Edge Betweenness communities for each network
+
+# Assuming you have a list of networks named 'networks_list'
+
+# List to store modularity scores for each community detection algorithm
+modularity_scores <- list(Louvain = numeric(length(louvain_communities_list)),
+                          Greedy_Modularity = numeric(length(greedy_modularity_communities_list)),
+                          Edge_Betweenness = numeric(length(edge_betweenness_communities_list)))
+
+# Calculate modularity scores for Louvain communities
+for (i in 1:length(louvain_communities_list)) {
+  modularity_scores$Louvain[i] <- modularity(louvain_communities_list[[i]], networks_list[[i]])
+}
+
+# Calculate modularity scores for Greedy Modularity communities
+for (i in 1:length(greedy_modularity_communities_list)) {
+  modularity_scores$Greedy_Modularity[i] <- modularity(greedy_modularity_communities_list[[i]], networks_list[[i]])
+}
+
+# Calculate modularity scores for Edge Betweenness communities
+for (i in 1:length(edge_betweenness_communities_list)) {
+  modularity_scores$Edge_Betweenness[i] <- modularity(edge_betweenness_communities_list[[i]], networks_list[[i]])
+}
+
+# Output the modularity scores for each algorithm and network
+for (algo in names(modularity_scores)) {
+  cat("Algorithm:", algo, "\n")
+  for (i in 1:length(modularity_scores[[algo]])) {
+    cat("Network", i, "Modularity Score:", modularity_scores[[algo]][i], "\n")
+  }
+  cat("\n")
+}
+
+```
+
+```{r}
+# Assuming you have lists of detected communities for each algorithm
+# ... (existing code for Louvain, Greedy Modularity, and Edge Betweenness communities)
+louvain_communities_list <- list(louvain_communities_w,louvain_communities_la, louvain_communities_a, louvain_communities_f )  # Louvain communities for each network
+
+greedy_modularity_communities_list <- list(greedy_modularity_communities_w,greedy_modularity_communities_la, greedy_modularity_communities_a, greedy_modularity_communities_f )  # Greedy Modularity communities for each network
+
+edge_betweenness_communities_list <- list(ebc_work,ebc_learnadvice,ebc_advice,ebc_friend   )  # Edge Betweenness communities for each network
+
+infomap_communities_list <- list(infomap_communities, infomap_communities_la, infomap_communities_a, infomap_communities_f)
+
+# Extend the modularity_scores list to include Infomap
+modularity_scores <- list(
+  Louvain = numeric(length(louvain_communities_list)),
+  Greedy_Modularity = numeric(length(greedy_modularity_communities_list)),
+  Edge_Betweenness = numeric(length(edge_betweenness_communities_list)),
+  Infomap = numeric(length(infomap_communities_list))
+)
+
+# Calculate modularity scores for Infomap communities
+for (i in 1:length(infomap_communities_list)) {
+  modularity_scores$Infomap[i] <- modularity(infomap_communities_list[[i]], networks_list[[i]])
+}
+
+# Output the modularity scores for each algorithm and network
+for (algo in names(modularity_scores)) {
+  cat("Algorithm:", algo, "\n")
+  for (i in 1:length(modularity_scores[[algo]])) {
+    cat("Network", i, "Modularity Score:", modularity_scores[[algo]][i], "\n")
+  }
+  cat("\n")
+}
+
+```
+
+So in summary,
+
+It seems like the Louvain Algorithm is the best to split the networks into their different communities because it has produced the highest modularity scores. It is worth noting however that the Louvain algorithm requires that the networks be undirected, so I had to change them to be undirected for me to run the code, as a result there is some information loss. Further analysis is explored in the written report.
+
+# 11) ICM
+
+Select a random node in the network.
+
+```{r}
+ran_actor_advice <- sample(1:71, 1)
+V(advice)[ran_actor_advice]
+ran_actor_friend <- sample(1:71, 1)
+V(friend)[ran_actor_friend]
+ran_actor_work <- sample(1:71, 1)
+V(work)[ran_actor_work]
+```
+
+```{r}
+# Minus 1, because the actor himself is not his neighbour.
+n_of_neighbours_advice <- length(neighborhood(advice, order = 1, ran_actor_advice, 'out')[[1]])-1
+n_of_neighbours_friend <- length(neighborhood(friend, order = 1, ran_actor_friend, 'out')[[1]])-1
+n_of_neighbours_work <- length(neighborhood(work, order = 1, ran_actor_work, 'out')[[1]])-1
+```
+
+First we select the threshold.
+
+```{r}
+threshold_prob_advice <- threshold(n_of_neighbours_advice)
+threshold_prob_friend <- threshold(n_of_neighbours_friend)
+threshold_prob_work <- threshold(n_of_neighbours_work)
+```
+
+```{r}
+results_icm_advice <- simulate_ICM(advice, 0.2, external = FALSE)
+results_icm_friend <- simulate_ICM(friend, 0.2, external = FALSE)
+results_icm_work <- simulate_ICM(work, 0.2, external = FALSE)
+```
+
+```{r}
+#sum(1:71)
+#sum(unique(results_icm_advice[[7]]))
+results_icm_advice
+
+# Converges in 4 steps
+```
+
+```{r}
+#sum(1:71)-44-47
+#sum(unique(results_icm_friend[[4]]))
+results_icm_friend
+
+# Converges in 7 steps
+```
+
+```{r}
+#sum(1:71)-8
+#sum(unique(results_icm_work[[4]]))
+results_icm_work
+
+# Converges in 3 steps
+```
+
+# 12.) DeGroot
+
+JuanJo's function
+
+```{r}
+# DeGroot Model
+deGroot <- function(graph, weight, length = 5, niter = 6, seed = 101){
+  set.seed(seed)
+  t0 <- as.integer(runif(gorder(graph), 0, 5))
+  names(t0) <- V(graph)$name
+  
+  
+  update_mat <- as.matrix(as_adjacency_matrix(graph, attr = 'weight'))
+  output <- vector(mode='list', length=niter)
+  
+  
+  output[[1]] <- as.matrix(t0, ncol=1)
+  for (i in 2:(niter)){
+    output[[i]] <- update_mat %*% output[[i-1]]
+  }
+  for (i in seq_along(output)){
+    for (j in seq_along(output[[i]])){
+      output[[i]][j] <- ifelse(output[[i]][j]%%1 >= 0.5, 
+                               ceiling(output[[i]][j]), 
+                               floor(output[[i]][j]))
+    }
+  }
+  return(output)
+}
+plot_deGroot <- function(graph, degroot, nrow, ncol, layout = NULL, low_col = "yellow", high_col = "black"){
+  
+  # node colors
+  temp_cols <- colorRampPalette(c("blue", "red"))(length(unique(degroot[[1]])))
+  temp_cols <- setNames(temp_cols, sort.list(temp_cols, decreasing = TRUE)-1)
+  colors <- vector(mode='list', length=length(degroot))
+  
+  for (i in seq_along(degroot)){
+    graph <- graph %>% 
+      set_vertex_attr(paste0("Opinion", i-1), 
+                      value = degroot[[i]])
+    for (j in degroot[[i]]){
+      colors[[i]] <- append(colors[[i]], 
+                            temp_cols[which(names(temp_cols) == j)])
+    }
+  }
+  
+  # Plot
+  if (is.null(layout)){
+    lo <- layout_nicely(graph)
+  } else {
+    lo <- layout
+  }
+  
+  fac <- max(eigen_centrality(graph)$vector)*20
+  par(mfrow = c(nrow, ncol))
+  for (i in seq_along(degroot)){
+    plot(graph,
+         layout = lo,
+         main = paste("t=",i-1),
+         vertex.color = colors[[i]],
+         vertex.label.color = ifelse(colors[[i]] == "blue", "red", "white"),
+         vertex.label.cex = 1.2,
+         edge.color = "black",
+         edge.width = 0.3,
+         edge.arrow.size = 0.1,
+         vertex.label.size = 0,
+         vertex.size = eigen_centrality(graph)$vector*fac)
+  }
+}
+
+
+```
+
+```{r}
+weights_la <- E(learn_advice)$weight
+print(weights_la)
+```
+
+```{r}
+class(learn_advice)
+```
+
+```{r}
+E(learn_advice)
+```
+
+```{r}
+weights_la <- E(learn_advice)$weight
+la_degroot <- deGroot(learn_advice, weights_la)
+```
+
+```{r}
+#doing the degroot model on the learn & advice network
+la_degroot <- deGroot(learn_advice, weights_la)
+```
+
+```{r}
+par(mar = c(2, 2, 2, 2))
+Dla_plot <- plot_deGroot(learn_advice,la_degroot,1,1, layout = NULL, low_col = 'yellow', high_col = 'black')
+
+
+```
+
+Based on the visual change in the network from the first iteration to the sixth iteration, we can deduce that a consensus has been reached, because all of the nodes have changed from red or blue to purple which is seen in the second figure. Regarding whether the consensus reached is the optimum one or not, this would warrant external information being provided. Additionally, it does seem as though there is a bias,  where those nodes with a higher degree were able to have more influence in changing the opinions of other nodes.
